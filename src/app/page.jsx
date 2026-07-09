@@ -239,7 +239,7 @@ export default function Home() {
         <div className="sectionTitle">Simple pricing. Lasting value.</div>
         <div className="pricing">
           {plans.map(([name, price, description, items, cta], i) => (
-            <article className={`priceCard ${i === 1 ? "popular" : ""}`} key={name as string}>
+            <article className={`priceCard ${i === 1 ? "popular" : ""}`} key={name}>
               {i === 1 && <div className="badge">Most popular</div>}
               <h3>{name}</h3>
               <p>{description}</p>
