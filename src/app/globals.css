@@ -285,7 +285,7 @@ h1 {
   position: relative;
 }
 .quote::before {
-  content: "ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ";
+  content: "ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“";
   position: absolute;
   top: 14px;
   left: 22px;
@@ -942,5 +942,372 @@ footer .wordmark {
 
   .pricingControls {
     flex-direction: column;
+  }
+}
+/* =========================================================
+   VozEterna layout repair after language/currency switcher
+   ========================================================= */
+
+main {
+  overflow-x: hidden;
+}
+
+header {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 22px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  position: relative;
+  z-index: 20;
+}
+
+header nav {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+}
+
+header nav a {
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: nowrap;
+}
+
+.hero {
+  width: min(1280px, calc(100% - 48px));
+  margin: 34px auto 76px;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 72px;
+  align-items: center;
+}
+
+.hero > div:first-child {
+  position: relative;
+  z-index: 3;
+}
+
+.hero h1 {
+  max-width: 560px;
+}
+
+.hero .lede {
+  max-width: 560px;
+}
+
+.heroImage {
+  position: relative !important;
+  width: 100%;
+  min-height: 410px;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 28px 70px rgba(13, 59, 78, 0.14);
+}
+
+.heroImage img {
+  object-fit: cover;
+}
+
+.features {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto 76px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.feature {
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.how {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto 76px;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 46px;
+  align-items: center;
+}
+
+.steps {
+  display: grid;
+  gap: 16px;
+  margin-top: 34px;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.howPreview {
+  min-height: 440px;
+  border-radius: 26px;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 24px 60px rgba(13, 59, 78, 0.1);
+}
+
+.recordingCard {
+  max-width: 260px;
+  min-height: 210px;
+  margin: 42px auto 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.howMiniCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.audiences {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto 76px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.audience {
+  min-height: 230px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: center;
+}
+
+.audience img {
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.quotes {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto 76px;
+}
+
+.quotes > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.quote {
+  min-height: 170px;
+}
+
+.bilingual {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto 76px;
+  display: grid;
+  grid-template-columns: auto 1fr auto 0.8fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.bilingual img {
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.betaNotice {
+  width: min(1280px, calc(100% - 48px));
+}
+
+.section {
+  width: 100%;
+}
+
+.pricing {
+  width: min(1280px, calc(100% - 48px));
+  margin: 30px auto 90px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.priceCard {
+  min-height: 430px;
+}
+
+.finalCta {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto 76px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 32px;
+  align-items: center;
+}
+
+.finalCta img {
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+footer {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 38px 0 60px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 70px;
+  align-items: start;
+}
+
+.footerCols {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 36px;
+}
+
+/* Better switcher positioning */
+.siteControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid rgba(13, 59, 78, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.segmented button {
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 900;
+  padding: 7px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.segmented button.active {
+  background: var(--navy);
+  color: white;
+}
+
+/* Mobile repair */
+@media (max-width: 980px) {
+  header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  header nav {
+    justify-content: center;
+  }
+
+  .headerRight {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .hero,
+  .how,
+  .audiences,
+  .bilingual,
+  .pricing,
+  .finalCta,
+  footer {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    gap: 32px;
+    text-align: center;
+  }
+
+  .hero h1,
+  .hero .lede {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .heroActions {
+    justify-content: center;
+  }
+
+  .heroImage {
+    min-height: 340px;
+  }
+
+  .features {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .quotes > div {
+    grid-template-columns: 1fr;
+  }
+
+  .audience,
+  .finalCta {
+    text-align: center;
+  }
+
+  .audience {
+    grid-template-columns: 1fr;
+  }
+
+  .finalCta {
+    justify-items: center;
+  }
+
+  .footerCols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .features {
+    grid-template-columns: 1fr;
+  }
+
+  .footerCols {
+    grid-template-columns: 1fr;
+  }
+
+  .previewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroImage {
+    min-height: 280px;
   }
 }
