@@ -386,14 +386,24 @@ export default function Home() {
         </div>
       </section>
 
+      
       <section className="bilingual" id="about">
-        <div>
+        <div className="bilingualCopy">
           <h2>{t.bilingualTitle}</h2>
           <p>{t.bilingualText}</p>
         </div>
-        <Image src="/images/bilingual-family.png" alt="Bilingual family using VozEterna" width={230} height={130} />
+
+        <Image
+          className="bilingualImage"
+          src="/images/bilingual-family.png"
+          alt="Bilingual family using VozEterna"
+          width={230}
+          height={130}
+        />
+
         <h3>{t.bilingualSide}</h3>
       </section>
+
 
       <section className="betaNotice">
         <strong>{t.betaTitle}</strong> {t.betaText}
