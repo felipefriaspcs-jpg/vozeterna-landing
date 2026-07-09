@@ -121,7 +121,7 @@ const copy = {
     blog: "Blog",
     guides: "Guides",
     contact: "Contact",
-    location: "Austin, Texas",
+    location: "Guadalajara, Jalisco, Mexico",
   },
 
   es: {
@@ -224,7 +224,7 @@ const copy = {
     blog: "Blog",
     guides: "Guias",
     contact: "Contacto",
-    location: "Austin, Texas",
+    location: "Guadalajara, Jalisco, Mexico",
   },
 };
 
@@ -439,10 +439,10 @@ export default function Home() {
           <Image src="/brand/logo-primary.png" alt="VozEterna logo" width={150} height={42} />
         </a>
         <div className="footerCols">
-          <div><strong>{t.footerCompany}</strong><a>{t.about}</a><a>{t.careers}</a><a>{t.press}</a></div>
-          <div><strong>{t.footerSupport}</strong><a>{t.help}</a><a>{t.privacy}</a><a>{t.terms}</a></div>
-          <div><strong>{t.footerResources}</strong><a>{t.blog}</a><a>{t.guides}</a><a>{t.contact}</a></div>
-          <div><strong>{t.footerContact}</strong><a>felipe.frias.pcs@gmail.com</a><a>{t.location}</a></div>
+          <div><strong>{t.footerCompany}</strong><a href="/about">{t.about}</a><a href="/careers">{t.careers}</a><a href="/press">{t.press}</a></div>
+          <div><strong>{t.footerSupport}</strong><a href="/help-center">{t.help}</a><a href="/privacy-policy">{t.privacy}</a><a href="/terms">{t.terms}</a></div>
+          <div><strong>{t.footerResources}</strong><a href="/blog">{t.blog}</a><a href="/guides">{t.guides}</a><a href="/contact">{t.contact}</a></div>
+          <div><strong>{t.footerContact}</strong><a href="mailto:felipe.frias.pcs@gmail.com">felipe.frias.pcs@gmail.com</a><a>{t.location}</a></div>
         </div>
       </footer>
     </main>
