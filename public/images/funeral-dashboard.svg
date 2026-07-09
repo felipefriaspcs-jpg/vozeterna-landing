@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" role="img" aria-label="Partner portal">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffdf8"/>
+      <stop offset="55%" stop-color="#f3e9d7"/>
+      <stop offset="100%" stop-color="#d6eeee"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d3b4e"/>
+      <stop offset="100%" stop-color="#2c6f7e"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#0d3b4e" flood-opacity=".16"/>
+    </filter>
+  </defs>
+  <rect width="900" height="560" rx="44" fill="url(#bg)"/>
+  <path d="M-40 440 C160 390 310 445 520 390 C690 344 825 326 960 286 L960 590 L-40 590 Z" fill="url(#ribbon)"/>
+  <path d="M-40 410 C170 365 310 410 520 360 C685 320 825 306 960 250" fill="none" stroke="#d4a25a" stroke-width="24"/>
+  <g filter="url(#shadow)">
+    <circle cx="450" cy="230" r="96" fill="#fffaf1" stroke="white" stroke-width="8"/>
+    <circle cx="320" cy="185" r="62" fill="#fffaf1" stroke="white" stroke-width="8"/>
+    <circle cx="592" cy="190" r="68" fill="#fffaf1" stroke="white" stroke-width="8"/>
+    <circle cx="255" cy="325" r="50" fill="#fffaf1" stroke="white" stroke-width="8"/>
+    <rect x="410" y="278" width="82" height="128" rx="18" fill="#0d3b4e"/>
+  </g>
+  <text x="320" y="205" text-anchor="middle" font-size="60">▣</text>
+  <text x="450" y="265" text-anchor="middle" font-size="80">▣</text>
+  <text x="592" y="213" text-anchor="middle" font-size="64">▣</text>
+  <text x="255" y="345" text-anchor="middle" font-size="46">▣</text>
+  <circle cx="451" cy="342" r="9" fill="#d4a25a"/>
+  <text x="60" y="74" fill="#0d3b4e" font-family="Georgia,serif" font-size="36" font-weight="700">Partner portal</text>
+  <text x="60" y="112" fill="#5d7380" font-family="Arial,sans-serif" font-size="18">Simple tools for funeral homes</text>
+</svg>
