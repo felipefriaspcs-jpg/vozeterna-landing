@@ -25,7 +25,7 @@ const plans = [
   ["Funeral Home Partner", "$49", "Powerful tools to serve more families.", ["Digital tribute packages", "Family upload pages", "White-label branding", "Priority support"], "Partner With Us"],
 ];
 
-function Icon({ type }: { type: string }) {
+function Icon({ type }) {
   if (type === "play") return <svg viewBox="0 0 40 40"><rect x="5" y="8" width="30" height="24" rx="6"/><path d="M18 15l10 5-10 5z"/></svg>;
   if (type === "lock") return <svg viewBox="0 0 40 40"><path d="M12 18h16v14H12z"/><path d="M15 18v-4a5 5 0 0110 0v4"/><circle cx="20" cy="25" r="2"/></svg>;
   if (type === "qr") return <svg viewBox="0 0 40 40"><path d="M8 8h9v9H8zM23 8h9v9h-9zM8 23h9v9H8zM24 24h3v3h-3zM29 23h3v9h-3zM22 29h4v3h-4z"/></svg>;

@@ -6,7 +6,7 @@ export const metadata = {
     "A bilingual family legacy and memorial platform for recording video, audio, photos, final messages, QR memorial pages, and social legacy wishes.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>{children}</body>
