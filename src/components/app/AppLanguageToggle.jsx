@@ -1,12 +1,22 @@
 "use client";
 
-export default function AppLanguageToggle({ language, setLanguage }) {
+import { saveStoredAppLanguage } from "../../lib/appLanguage";
+
+export default function AppLanguageToggle({ language = "en", setLanguage }) {
+  function changeLanguage(nextLanguage) {
+    if (setLanguage) {
+      setLanguage(nextLanguage);
+    }
+
+    saveStoredAppLanguage(nextLanguage);
+  }
+
   return (
-    <div className="appLanguageToggle" aria-label="Language selector">
+    <div className="appLanguageToggle">
       <button
         type="button"
         className={language === "en" ? "active" : ""}
-        onClick={() => setLanguage("en")}
+        onClick={() => changeLanguage("en")}
       >
         EN
       </button>
@@ -14,7 +24,7 @@ export default function AppLanguageToggle({ language, setLanguage }) {
       <button
         type="button"
         className={language === "es" ? "active" : ""}
-        onClick={() => setLanguage("es")}
+        onClick={() => changeLanguage("es")}
       >
         ES
       </button>

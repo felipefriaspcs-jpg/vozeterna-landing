@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppLanguageToggle from "../../components/app/AppLanguageToggle";
 import { supabase } from "../../lib/supabaseClient";
+import { getStoredAppLanguage } from "../../lib/appLanguage";
 
 const copy = {
   en: {
@@ -162,6 +163,10 @@ export default function AppHomePage() {
   const [loadingStats, setLoadingStats] = useState(true);
 
   const t = copy[language];
+
+  useEffect(() => {
+    setLanguage(getStoredAppLanguage());
+  }, []);
 
   useEffect(() => {
     async function loadDashboardStats() {
