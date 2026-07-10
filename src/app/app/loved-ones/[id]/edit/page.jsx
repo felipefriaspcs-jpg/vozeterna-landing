@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../../../lib/supabaseClient";
+import { relationshipOptions, getRelationshipEnglishLabel } from "../../../../../lib/relationshipLabels";
 import { useAppLanguage } from "../../../../../lib/useAppLanguage";
 
 const copy = {
@@ -22,10 +23,16 @@ const copy = {
     saved: "Profile updated successfully.",
     fullName: "Full name",
     relationship: "Relationship",
+    relationshipType: "Relationship type",
+    relationshipCustom: "Custom relationship",
     birthDate: "Birth date",
     deathDate: "Death date",
     bio: "Bio or life story",
     profilePhoto: "Profile photo",
+    frameStyle: "Photo frame style",
+    frameHelp: "Choose how the profile photo should appear on private and public pages.",
+    freeFrame: "Free",
+    premiumFrame: "Premium",
     choosePhoto: "Choose new profile photo",
     photoHelp:
       "This photo appears on the private profile and public memorial page if enabled.",
@@ -59,10 +66,16 @@ const copy = {
     saved: "Perfil actualizado correctamente.",
     fullName: "Nombre completo",
     relationship: "Parentesco",
+    relationshipType: "Tipo de parentesco",
+    relationshipCustom: "Parentesco personalizado",
     birthDate: "Fecha de nacimiento",
     deathDate: "Fecha de fallecimiento",
     bio: "Biografía o historia de vida",
     profilePhoto: "Foto de perfil",
+    frameStyle: "Estilo de marco",
+    frameHelp: "Elige cómo aparecerá la foto del perfil en páginas privadas y públicas.",
+    freeFrame: "Gratis",
+    premiumFrame: "Premium",
     choosePhoto: "Elegir nueva foto de perfil",
     photoHelp:
       "Esta foto aparece en el perfil privado y en la página memorial pública si está activada.",
@@ -91,10 +104,40 @@ export default function EditLovedOnePage() {
   const language = useAppLanguage();
   const t = copy[language];
 
+  const hasPremium = false;
+
+  const frameOptions = [
+    { value: "warm_wood", label: "Warm Wood", tier: "free" },
+    { value: "white_memorial", label: "White Memorial", tier: "free" },
+    { value: "vintage_album", label: "Vintage Album", tier: "free" },
+    { value: "classic_gold", label: "Classic Gold", tier: "premium" },
+    { value: "silver_metal", label: "Silver Metal", tier: "premium" },
+    { value: "black_metal", label: "Black Metal", tier: "premium" },
+  ];
+
+  function isPremiumFrame(value) {
+    return frameOptions.some((frame) => frame.value === value && frame.tier === "premium");
+  }
+
+  function handleFrameChange(value) {
+    if (isPremiumFrame(value) && !hasPremium) {
+      setMessage(
+        language === "es"
+          ? "Este marco es Premium. Pronto podrás desbloquearlo con un plan premium."
+          : "This frame is Premium. You’ll be able to unlock it soon with a premium plan."
+      );
+      return;
+    }
+
+    setFrameStyle(value);
+  }
+
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [fullName, setFullName] = useState("");
   const [relationship, setRelationship] = useState("");
+  const [relationshipType, setRelationshipType] = useState("");
+  const [relationshipCustom, setRelationshipCustom] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [deathDate, setDeathDate] = useState("");
   const [bio, setBio] = useState("");
@@ -103,6 +146,7 @@ export default function EditLovedOnePage() {
   const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [memorialPublic, setMemorialPublic] = useState(false);
   const [memorialSlug, setMemorialSlug] = useState("");
+  const [frameStyle, setFrameStyle] = useState("classic_gold");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -132,12 +176,15 @@ export default function EditLovedOnePage() {
       setProfile(data);
       setFullName(data.full_name || "");
       setRelationship(data.relationship || "");
+      setRelationshipType(data.relationship_type || "");
+      setRelationshipCustom(data.relationship_custom || "");
       setBirthDate(data.birth_date || "");
       setDeathDate(data.death_date || "");
       setBio(data.bio || "");
       setProfilePhotoPath(data.profile_photo_path || "");
       setMemorialPublic(Boolean(data.memorial_public));
       setMemorialSlug(data.memorial_slug || makeSlug(data.full_name || ""));
+      setFrameStyle(data.frame_style || "classic_gold");
 
       if (data.profile_photo_path) {
         const { data: signedPhotoData } = await supabase.storage
@@ -213,17 +260,27 @@ export default function EditLovedOnePage() {
         ? makeSlug(memorialSlug)
         : makeSlug(fullName);
 
+      const finalFrameStyle =
+        isPremiumFrame(frameStyle) && !hasPremium ? "warm_wood" : frameStyle;
+
       const { error } = await supabase
         .from("loved_ones")
         .update({
           full_name: fullName.trim(),
-          relationship: relationship.trim() || null,
+          relationship:
+            relationshipType === "other"
+              ? relationshipCustom.trim() || null
+              : getRelationshipEnglishLabel(relationshipType) || relationship.trim() || null,
+          relationship_type: relationshipType || null,
+          relationship_custom:
+            relationshipType === "other" ? relationshipCustom.trim() || null : null,
           birth_date: birthDate || null,
           death_date: deathDate || null,
           bio: bio.trim() || null,
           profile_photo_path: finalProfilePhotoPath || null,
           memorial_public: memorialPublic,
           memorial_slug: finalSlug,
+          frame_style: finalFrameStyle,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id);
@@ -313,6 +370,58 @@ export default function EditLovedOnePage() {
           <p className="appEyebrow">{t.profilePhoto}</p>
           <p>{t.photoHelp}</p>
 
+          <div className="framePreviewMini">
+            <div className={`frameSample ${frameStyle}`}>
+              {profilePhotoUrl ? (
+                <img src={profilePhotoUrl} alt={fullName} />
+              ) : (
+                <span>{getInitials(fullName)}</span>
+              )}
+            </div>
+          </div>
+
+          <label className="fieldLabel" htmlFor="frameStyle">
+            {t.frameStyle}
+          </label>
+
+          <div className="frameChoiceGrid">
+            {frameOptions.map((frame) => {
+              const locked = frame.tier === "premium" && !hasPremium;
+              const selected = frameStyle === frame.value;
+
+              return (
+                <button
+                  type="button"
+                  key={frame.value}
+                  className={
+                    selected
+                      ? `frameChoice active ${frame.value}`
+                      : `frameChoice ${frame.value}`
+                  }
+                  onClick={() => handleFrameChange(frame.value)}
+                >
+                  <span className={`frameChoicePreview ${frame.value}`}>
+                    {profilePhotoUrl ? (
+                      <img src={profilePhotoUrl} alt={fullName} />
+                    ) : (
+                      <em>{getInitials(fullName)}</em>
+                    )}
+                  </span>
+
+                  <strong>{frame.label}</strong>
+
+                  <small className={locked ? "premiumBadge" : "freeBadge"}>
+                    {frame.tier === "premium" ? t.premiumFrame : t.freeFrame}
+                  </small>
+
+                  {locked && <span className="lockedFrameText">🔒</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="helperText">{t.frameHelp}</p>
+
           <label className="appButton secondary photoUploadButton" htmlFor="profilePhotoFile">
             {t.choosePhoto}
           </label>
@@ -344,15 +453,39 @@ export default function EditLovedOnePage() {
             }}
           />
 
-          <label className="fieldLabel" htmlFor="relationship">
-            {t.relationship}
+          <label className="fieldLabel" htmlFor="relationshipType">
+            {t.relationshipType}
           </label>
-          <input
-            id="relationship"
+          <select
+            id="relationshipType"
             className="appInput"
-            value={relationship}
-            onChange={(e) => setRelationship(e.target.value)}
-          />
+            value={relationshipType}
+            onChange={(e) => setRelationshipType(e.target.value)}
+          >
+            <option value="">
+              {relationship || (language === "es" ? "Selecciona parentesco" : "Select relationship")}
+            </option>
+            {relationshipOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option[language]}
+              </option>
+            ))}
+          </select>
+
+          {relationshipType === "other" && (
+            <>
+              <label className="fieldLabel" htmlFor="relationshipCustom">
+                {t.relationshipCustom}
+              </label>
+              <input
+                id="relationshipCustom"
+                className="appInput"
+                value={relationshipCustom}
+                onChange={(e) => setRelationshipCustom(e.target.value)}
+                placeholder={language === "es" ? "Ejemplo: Padrino, Madrina, Mentor" : "Example: Godfather, Godmother, Mentor"}
+              />
+            </>
+          )}
 
           <div className="twoColumnFields">
             <div>
@@ -404,39 +537,43 @@ export default function EditLovedOnePage() {
         </form>
 
         <aside className="editMemorialCard">
-          <p className="appEyebrow">{t.memorialEyebrow}</p>
-          <h2>{t.memorialTitle}</h2>
-          <p>{t.memorialText}</p>
+          <div className="memorialIntroColumn">
+            <p className="appEyebrow">{t.memorialEyebrow}</p>
+            <h2>{t.memorialTitle}</h2>
+            <p>{t.memorialText}</p>
 
-          <label className="checkRow memorialSwitch">
-            <input
-              type="checkbox"
-              checked={memorialPublic}
-              onChange={(e) => setMemorialPublic(e.target.checked)}
-            />
-            <span>{t.enableMemorial}</span>
-          </label>
-
-          <label className="fieldLabel" htmlFor="memorialSlug">
-            {t.memorialSlug}
-          </label>
-
-          <div className="slugPreviewRow">
-            <span>/memorial/</span>
-            <input
-              id="memorialSlug"
-              className="appInput"
-              value={memorialSlug}
-              onChange={(e) => setMemorialSlug(e.target.value)}
-              placeholder="rosa-frias-lopez"
-            />
+            <div className="privateVaultNote">
+              <strong>{t.trustTitle}</strong>
+              <p>{t.trustText}</p>
+            </div>
           </div>
 
-          <p className="helperText">{t.memorialHelp}</p>
+          <div className="memorialSettingsColumn">
+            <label className="checkRow memorialSwitch">
+              <input
+                type="checkbox"
+                checked={memorialPublic}
+                onChange={(e) => setMemorialPublic(e.target.checked)}
+              />
+              <span>{t.enableMemorial}</span>
+            </label>
 
-          <div className="privateVaultNote">
-            <strong>{t.trustTitle}</strong>
-            <p>{t.trustText}</p>
+            <label className="fieldLabel" htmlFor="memorialSlug">
+              {t.memorialSlug}
+            </label>
+
+            <div className="slugPreviewRow">
+              <span>/memorial/</span>
+              <input
+                id="memorialSlug"
+                className="appInput"
+                value={memorialSlug}
+                onChange={(e) => setMemorialSlug(e.target.value)}
+                placeholder="rosa-frias-lopez"
+              />
+            </div>
+
+            <p className="helperText">{t.memorialHelp}</p>
           </div>
         </aside>
       </section>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import AudioRecorder from "../../../components/app/AudioRecorder";
 import CameraRecorder from "../../../components/app/CameraRecorder";
 import { supabase } from "../../../lib/supabaseClient";
+import { getRelationshipLabel } from "../../../lib/relationshipLabels";
 import { useAppLanguage } from "../../../lib/useAppLanguage";
 
 const copy = {

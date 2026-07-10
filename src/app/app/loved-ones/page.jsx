@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+import { getRelationshipLabel } from "../../../lib/relationshipLabels";
 import { getStoredAppLanguage } from "../../../lib/appLanguage";
 
 const copy = {
@@ -200,7 +201,7 @@ export default function LovedOnesPage() {
         <section className="profileGrid">
           {profiles.map((profile) => (
             <article className="profileCard" key={profile.id}>
-              <div className="profileCardPhoto">
+              <div className={`profileCardPhoto ${profile.frame_style || "classic_gold"}`}>
                 {signedUrls[profile.id] ? (
                   <img src={signedUrls[profile.id]} alt={profile.full_name} />
                 ) : (
@@ -217,7 +218,7 @@ export default function LovedOnesPage() {
 
                 {profile.relationship && (
                   <p>
-                    <strong>{t.relationship}:</strong> {profile.relationship}
+                    <strong>{t.relationship}:</strong> {getRelationshipLabel(profile, language)}
                   </p>
                 )}
 

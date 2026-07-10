@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import MemoryActions from "../../../../components/app/MemoryActions";
 import MemorialQrCode from "../../../../components/app/MemorialQrCode";
 import { supabase } from "../../../../lib/supabaseClient";
+import { getRelationshipLabel } from "../../../../lib/relationshipLabels";
 import { getStoredAppLanguage } from "../../../../lib/appLanguage";
 
 const copy = {
@@ -15,6 +16,8 @@ const copy = {
     notFoundText: "This loved one profile may not exist or you may not have access to it.",
     profile: "Legacy Profile",
     publicMemorial: "Public memorial enabled",
+    livingLegacy: "Living legacy page enabled",
+    livingLegacy: "Living legacy page enabled",
     privateProfile: "Private profile",
     relationship: "Relationship",
     born: "Born",
@@ -27,7 +30,7 @@ const copy = {
     noLifeStory: "No life story has been added yet.",
     memories: "Private Vault Memories",
     memoriesText:
-      "These memories are stored in your private family vault. Only memories you approve will appear on the public memorial page.",
+      "These memories are stored in your private family vault. Only memories you approve will appear on the public page.",
     noMemories: "No memories added yet",
     noMemoriesText:
       "Upload a photo, audio message, video, document, or record a memory connected to this profile.",
@@ -55,6 +58,8 @@ const copy = {
     notFoundText: "Este perfil puede no existir o quizá no tienes acceso.",
     profile: "Perfil de legado",
     publicMemorial: "Memorial público activado",
+    livingLegacy: "Legado en vida activado",
+    livingLegacy: "Legado en vida activado",
     privateProfile: "Perfil privado",
     relationship: "Parentesco",
     born: "Nacimiento",
@@ -67,7 +72,7 @@ const copy = {
     noLifeStory: "Todavía no se ha agregado una historia de vida.",
     memories: "Recuerdos de la bóveda privada",
     memoriesText:
-      "Estos recuerdos están guardados en tu bóveda familiar privada. Solo los recuerdos que apruebes aparecerán en la página memorial pública.",
+      "Estos recuerdos están guardados en tu bóveda familiar privada. Solo los recuerdos que apruebes aparecerán en la página pública.",
     noMemories: "Todavía no hay recuerdos",
     noMemoriesText:
       "Sube una foto, mensaje de audio, video, documento o graba un recuerdo conectado a este perfil.",
@@ -285,7 +290,7 @@ export default function LovedOneDetailPage() {
     <main className="appShell personVaultShell">
       <section className="personVaultHero">
         <div className="personVaultPhotoWrap">
-          <div className="personVaultPhoto">
+          <div className={`personVaultPhoto ${person.frame_style || "classic_gold"}`}>
             {photoUrl ? (
               <img src={photoUrl} alt={person.full_name} />
             ) : (
@@ -296,15 +301,15 @@ export default function LovedOneDetailPage() {
 
         <div className="personVaultInfo">
           <p className="appEyebrow">
-            {person.memorial_public ? t.publicMemorial : t.privateProfile}
+            {person.memorial_public ? (person.death_date ? t.publicMemorial : t.livingLegacy) : t.privateProfile}
           </p>
 
           <h1>{person.full_name}</h1>
 
           <div className="personVaultDetails">
-            {person.relationship && (
+            {getRelationshipLabel(person, language) && (
               <p>
-                <strong>{t.relationship}:</strong> {person.relationship}
+                <strong>{t.relationship}:</strong> {getRelationshipLabel(person, language)}
               </p>
             )}
 
@@ -345,12 +350,13 @@ export default function LovedOneDetailPage() {
         <article className="personStoryCard">
           <p className="appEyebrow">{t.lifeStory}</p>
           <h2>{t.lifeStory}</h2>
-          <p>{person.bio || t.noLifeStory}</p>
+          <p>{language === "es" ? person.bio_es || person.bio || t.noLifeStory : person.bio || person.bio_es || t.noLifeStory}</p>
         </article>
 
         {person.memorial_public && person.memorial_slug ? (
           <MemorialQrCode
             url={`${window.location.origin}/memorial/${person.memorial_slug}`}
+            language={language}
           />
         ) : (
           <article className="personPrivacyCard">
