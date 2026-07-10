@@ -3168,3 +3168,23 @@ img[src="/brand/logo-primary.png"] {
     grid-template-columns: 1fr;
   }
 }
+
+.appTextarea {
+  width: 100%;
+  min-height: 150px;
+  border: 1px solid rgba(8, 63, 82, 0.18);
+  border-radius: 12px;
+  padding: 14px;
+  font: inherit;
+  color: #083f52;
+  background: #ffffff;
+  resize: vertical;
+}
+
+.memoryBio {
+  color: #496678 !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  line-height: 1.65;
+}

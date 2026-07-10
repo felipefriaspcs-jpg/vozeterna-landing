@@ -6,7 +6,7 @@ import { supabase } from "../../../lib/supabaseClient";
 
 export default function LibraryPage() {
   const [user, setUser] = useState(null);
-  const [files, setFiles] = useState([]);
+  const [memories, setMemories] = useState([]);
   const [signedUrls, setSignedUrls] = useState({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -23,13 +23,22 @@ export default function LibraryPage() {
         return;
       }
 
-      const { data, error } = await supabase.storage
-        .from("family-media")
-        .list(currentUser.id, {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: "created_at", order: "desc" },
-        });
+      const { data, error } = await supabase
+        .from("media_assets")
+        .select(`
+          id,
+          file_name,
+          file_path,
+          file_type,
+          file_size,
+          title,
+          created_at,
+          loved_ones (
+            full_name,
+            relationship
+          )
+        `)
+        .order("created_at", { ascending: false });
 
       if (error) {
         setMessage(error.message);
@@ -37,19 +46,17 @@ export default function LibraryPage() {
         return;
       }
 
-      setFiles(data || []);
+      setMemories(data || []);
 
       const urlMap = {};
 
-      for (const file of data || []) {
-        const filePath = `${currentUser.id}/${file.name}`;
-
+      for (const memory of data || []) {
         const { data: signedData } = await supabase.storage
           .from("family-media")
-          .createSignedUrl(filePath, 60 * 10);
+          .createSignedUrl(memory.file_path, 60 * 10);
 
         if (signedData?.signedUrl) {
-          urlMap[file.name] = signedData.signedUrl;
+          urlMap[memory.id] = signedData.signedUrl;
         }
       }
 
@@ -60,12 +67,13 @@ export default function LibraryPage() {
     loadLibrary();
   }, []);
 
-  function getFileKind(fileName) {
+  function getFileKind(fileName, fileType) {
+    const type = fileType || "";
     const lower = fileName.toLowerCase();
 
-    if (lower.match(/\.(jpg|jpeg|png|webp)$/)) return "image";
-    if (lower.match(/\.(mp3|wav|webm|mpeg)$/)) return "audio";
-    if (lower.match(/\.(mp4|mov|webm|quicktime)$/)) return "video";
+    if (type.startsWith("image/") || lower.match(/\.(jpg|jpeg|png|webp)$/)) return "image";
+    if (type.startsWith("audio/") || lower.match(/\.(mp3|wav|webm|mpeg)$/)) return "audio";
+    if (type.startsWith("video/") || lower.match(/\.(mp4|mov|webm|quicktime)$/)) return "video";
 
     return "file";
   }
@@ -115,8 +123,8 @@ export default function LibraryPage() {
             Upload more
           </Link>
 
-          <Link href="/app/profile" className="appButton secondary">
-            View profile
+          <Link href="/app/loved-ones" className="appButton secondary">
+            Loved one profiles
           </Link>
         </div>
       </section>
@@ -124,7 +132,7 @@ export default function LibraryPage() {
       <section className="libraryBox">
         {message && <div className="successBox">{message}</div>}
 
-        {files.length === 0 ? (
+        {memories.length === 0 ? (
           <div className="emptyState">
             <h2>No memories uploaded yet</h2>
             <p>Upload your first photo, audio file, or video to begin building your family vault.</p>
@@ -134,33 +142,29 @@ export default function LibraryPage() {
           </div>
         ) : (
           <div className="libraryGrid">
-            {files.map((file) => {
-              const kind = getFileKind(file.name);
-              const url = signedUrls[file.name];
+            {memories.map((memory) => {
+              const kind = getFileKind(memory.file_name, memory.file_type);
+              const url = signedUrls[memory.id];
 
               return (
-                <article className="memoryCard" key={file.name}>
+                <article className="memoryCard" key={memory.id}>
                   <div className="memoryPreview">
-                    {kind === "image" && url && (
-                      <img src={url} alt={file.name} />
-                    )}
-
-                    {kind === "audio" && url && (
-                      <audio controls src={url} />
-                    )}
-
-                    {kind === "video" && url && (
-                      <video controls src={url} />
-                    )}
-
-                    {kind === "file" && (
-                      <span>File</span>
-                    )}
+                    {kind === "image" && url && <img src={url} alt={memory.file_name} />}
+                    {kind === "audio" && url && <audio controls src={url} />}
+                    {kind === "video" && url && <video controls src={url} />}
+                    {kind === "file" && <span>File</span>}
                   </div>
 
                   <div className="memoryInfo">
-                    <h2>{file.name}</h2>
+                    <h2>{memory.file_name}</h2>
                     <p>{kind.toUpperCase()}</p>
+
+                    {memory.loved_ones?.full_name && (
+                      <p className="memoryBio">
+                        For: {memory.loved_ones.full_name}
+                        {memory.loved_ones.relationship ? ` — ${memory.loved_ones.relationship}` : ""}
+                      </p>
+                    )}
 
                     {url && (
                       <a href={url} target="_blank" rel="noopener noreferrer" className="textLink">
