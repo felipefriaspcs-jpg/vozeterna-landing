@@ -58,7 +58,11 @@ export default function ProfilePage() {
         <h2>{user.email}</h2>
 
         <div className="buttonRow">
-          <Link href="/app/upload" className="appButton">
+          <Link href="/app/library" className="appButton">
+            View library
+          </Link>
+
+          <Link href="/app/upload" className="appButton secondary">
             Upload memories
           </Link>
 

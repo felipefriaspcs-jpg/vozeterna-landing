@@ -103,9 +103,15 @@ export default function UploadPage() {
           Upload photos, audio files, and videos. Files are saved privately to your VozEterna cloud vault.
         </p>
 
-        <Link href="/app/profile" className="textLink">
-          View profile
-        </Link>
+        <div className="buttonRow">
+          <Link href="/app/library" className="appButton">
+            View library
+          </Link>
+
+          <Link href="/app/profile" className="appButton secondary">
+            View profile
+          </Link>
+        </div>
       </section>
 
       <section className="uploadBox">
