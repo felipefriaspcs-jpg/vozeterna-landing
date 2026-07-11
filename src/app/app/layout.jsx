@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppLanguage } from "../../lib/useAppLanguage";
@@ -48,8 +49,15 @@ export default function AppLayout({ children }) {
   return (
     <>
       <header className="appHeader">
-        <Link href="/app" className="appLogo">
-          VozEterna
+        <Link href="/app" className="appLogo appLogoWithImage" aria-label="VozEterna dashboard">
+          <Image
+            src="/brand/logo-primary.png"
+            alt="VozEterna"
+            width={170}
+            height={48}
+            priority
+            className="appLogoImage"
+          />
         </Link>
 
         <nav className="appNav">

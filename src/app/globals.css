@@ -8927,3 +8927,27 @@ select.appInput {
   min-width: 220px;
 }
 
+
+/* VozEterna app logo */
+.appLogoWithImage {
+  display: inline-flex;
+  align-items: center;
+  min-width: 170px;
+}
+
+.appLogoImage {
+  display: block;
+  width: auto;
+  height: 42px;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .appLogoWithImage {
+    min-width: auto;
+  }
+
+  .appLogoImage {
+    height: 34px;
+  }
+}
