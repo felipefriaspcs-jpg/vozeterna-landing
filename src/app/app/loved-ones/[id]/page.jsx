@@ -426,6 +426,7 @@ export default function LovedOneDetailPage() {
                     <MemoryActions
                       url={url}
                       memoryName={memory.file_name}
+                      language={language}
                       isPublic={Boolean(memory.show_on_memorial)}
                       onTogglePublic={() => toggleMemoryPublic(memory)}
                       onDelete={() => deleteMemory(memory)}

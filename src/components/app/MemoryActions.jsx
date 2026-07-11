@@ -8,9 +8,33 @@ export default function MemoryActions({
   isPublic = false,
   onTogglePublic,
   onDelete,
+  language = "en",
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+
+  const labels =
+    language === "es"
+      ? {
+          publicBadge: "Público en memorial",
+          open: "Abrir",
+          share: "Compartir",
+          makePublic: "Hacer público",
+          makePrivate: "Hacer privado",
+          delete: "Eliminar",
+          shareText: "Recuerdo de VozEterna",
+          actionLabel: "Acciones del recuerdo",
+        }
+      : {
+          publicBadge: "Public on memorial",
+          open: "Open",
+          share: "Share",
+          makePublic: "Make public",
+          makePrivate: "Make private",
+          delete: "Delete",
+          shareText: "VozEterna memory",
+          actionLabel: "Memory actions",
+        };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -29,13 +53,12 @@ export default function MemoryActions({
     try {
       if (navigator.share) {
         await navigator.share({
-          title: memoryName || "VozEterna memory",
-          text: "VozEterna memory / Recuerdo de VozEterna",
+          title: memoryName || labels.shareText,
+          text: labels.shareText,
           url,
         });
       } else {
         await navigator.clipboard.writeText(url);
-        alert("Link copied / Enlace copiado");
       }
     } catch {
       // User cancelled sharing or browser blocked it.
@@ -56,14 +79,14 @@ export default function MemoryActions({
 
   return (
     <div className="memoryActionsMenu" ref={menuRef}>
-      {isPublic && <span className="publicMemoryBadge">Public</span>}
+      {isPublic && <span className="publicMemoryBadge">{labels.publicBadge}</span>}
 
       <button
         type="button"
         className="memoryDotsButton"
         onClick={() => setOpen((value) => !value)}
-        aria-label="Memory actions / Acciones del recuerdo"
-        title="Memory actions / Acciones"
+        aria-label={labels.actionLabel}
+        title={labels.actionLabel}
       >
         ⋮
       </button>
@@ -72,24 +95,24 @@ export default function MemoryActions({
         <div className="memoryActionsPanel">
           {url && (
             <a href={url} target="_blank" rel="noopener noreferrer">
-              Open / Abrir
+              {labels.open}
             </a>
           )}
 
           {url && (
             <button type="button" onClick={handleShare}>
-              Share / Compartir
+              {labels.share}
             </button>
           )}
 
           {onTogglePublic && (
             <button type="button" onClick={handleTogglePublic}>
-              {isPublic ? "Hide from memorial" : "Show on memorial"}
+              {isPublic ? labels.makePrivate : labels.makePublic}
             </button>
           )}
 
           <button type="button" className="dangerAction" onClick={handleDelete}>
-            Delete / Eliminar
+            {labels.delete}
           </button>
         </div>
       )}
