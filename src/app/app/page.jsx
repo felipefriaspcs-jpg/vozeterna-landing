@@ -555,18 +555,5 @@ export default function AppHomePage() {
         </div>
       </section>
     </main>
-      </div>
-
-      
-        <MobileDashboard
-          language={language}
-          user={user}
-          stats={stats}
-          loadingStats={loadingStats}
-          storageDisplay={storageDisplay}
-          storagePercent={storagePercent}
-        />
-      </div>
-    </>
   );
 }
