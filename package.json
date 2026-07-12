@@ -14,6 +14,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "lucide-react": "^1.24.0",
     "next": "latest",
     "postcss": "latest",
     "qrcode.react": "^4.2.0",

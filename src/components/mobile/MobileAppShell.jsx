@@ -4,6 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  BookOpen,
+  FolderHeart,
+  Home,
+  LibraryBig,
+  Menu,
+  Mic2,
+  Moon,
+  Sun,
+  UserRound,
+  X,
+} from "lucide-react";
+import {
   getInitialMobileLanguage,
   setStoredMobileLanguage,
 } from "./mobileLanguage";
@@ -36,7 +48,7 @@ const copy = {
     menu: "Menú",
     close: "Cerrar",
     dashboard: "Inicio",
-    profile: "Perfiles",
+    profile: "Perfil",
     library: "Biblioteca",
     collections: "Álbumes",
     record: "Grabar",
@@ -55,25 +67,25 @@ const copy = {
 
 function getNavItems(t) {
   return [
-    { href: "/mobile", label: t.dashboard, icon: "▤" },
-    { href: "/mobile/profiles", label: t.profile, icon: "●" },
-    { href: "/mobile/library", label: t.library, icon: "▰" },
-    { href: "/mobile/collections", label: t.collections, icon: "⌂" },
-    { href: "/mobile/record", label: t.record, icon: "◔" },
+    { href: "/mobile", label: t.dashboard, icon: Home },
+    { href: "/mobile/profiles", label: t.profile, icon: UserRound },
+    { href: "/mobile/library", label: t.library, icon: LibraryBig },
+    { href: "/mobile/collections", label: t.collections, icon: FolderHeart },
+    { href: "/mobile/record", label: t.record, icon: Mic2 },
   ];
 }
 
 function getMenuItems(t) {
   return [
-    { href: "/mobile", label: t.dashboard },
-    { href: "/mobile/profiles", label: t.profile },
-    { href: "/mobile/library", label: t.library },
-    { href: "/mobile/collections", label: t.collections },
-    { href: "/mobile/record", label: t.record },
-    { href: "/mobile/upload", label: t.upload },
-    { href: "/mobile/consent", label: t.consent },
-    { href: "/mobile/account", label: t.account },
-    { href: "/", label: t.website },
+    { href: "/mobile", label: t.dashboard, icon: Home },
+    { href: "/mobile/profiles", label: t.profile, icon: UserRound },
+    { href: "/mobile/library", label: t.library, icon: LibraryBig },
+    { href: "/mobile/collections", label: t.collections, icon: FolderHeart },
+    { href: "/mobile/record", label: t.record, icon: Mic2 },
+    { href: "/mobile/upload", label: t.upload, icon: BookOpen },
+    { href: "/mobile/consent", label: t.consent, icon: BookOpen },
+    { href: "/mobile/account", label: t.account, icon: UserRound },
+    { href: "/", label: t.website, icon: Home },
   ];
 }
 
@@ -157,7 +169,8 @@ export default function MobileAppShell({ children }) {
 
         <div className="mobileHeaderActions">
           <button type="button" onClick={toggleTheme} className="mobileThemeButton">
-            {theme === "dark" ? t.themeLight : t.themeDark}
+            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+            <span>{theme === "dark" ? t.themeLight : t.themeDark}</span>
           </button>
 
           <button
@@ -167,7 +180,7 @@ export default function MobileAppShell({ children }) {
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((current) => !current)}
           >
-            {menuOpen ? "×" : "☰"}
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </header>
@@ -190,7 +203,7 @@ export default function MobileAppShell({ children }) {
               </div>
 
               <button type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}>
-                ×
+                <X size={18} />
               </button>
             </div>
 
@@ -217,11 +230,16 @@ export default function MobileAppShell({ children }) {
             </button>
 
             <nav className="mobileDrawerLinks">
-              {menuItems.map((item) => (
-                <Link href={item.href} key={item.href} onClick={() => setMenuOpen(false)}>
-                  {item.label}
-                </Link>
-              ))}
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Link href={item.href} key={item.href} onClick={() => setMenuOpen(false)}>
+                    <Icon size={17} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
             </nav>
           </aside>
         </div>
@@ -231,17 +249,22 @@ export default function MobileAppShell({ children }) {
         {children}
       </div>
 
-      <nav className="mobileNativeBottomNav" aria-label="Mobile app navigation">
+      <nav className="mobileNativeBottomNav premiumBottomNav" aria-label="Mobile app navigation">
         {navItems.map((item) => {
           const active =
             item.href === "/mobile"
               ? pathname === "/mobile"
               : pathname.startsWith(item.href);
 
+          const Icon = item.icon;
+
           return (
             <Link href={item.href} className={active ? "active" : ""} key={item.href}>
-              <span>{item.icon}</span>
+              <span className="premiumNavIconWrap">
+                <Icon size={21} strokeWidth={2.35} />
+              </span>
               <strong>{item.label}</strong>
+              <em />
             </Link>
           );
         })}

@@ -15701,3 +15701,177 @@ select.appInput {
     width: 88vw;
   }
 }
+/* Premium mobile bottom navigation */
+.mobileNativeBottomNav.premiumBottomNav {
+  position: fixed !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: 12px !important;
+  z-index: 9999 !important;
+  height: 76px !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  padding: 8px !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255, 255, 255, 0.56) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 250, 241, 0.68)) !important;
+  box-shadow:
+    0 22px 48px rgba(8, 63, 82, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84) !important;
+  backdrop-filter: blur(22px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(170%) !important;
+}
+
+.mobileAppExperience[data-mobile-theme="dark"] .mobileNativeBottomNav.premiumBottomNav {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  background:
+    linear-gradient(135deg, rgba(13, 38, 48, 0.9), rgba(6, 24, 32, 0.78)) !important;
+  box-shadow:
+    0 22px 52px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.mobileNativeBottomNav.premiumBottomNav a {
+  position: relative !important;
+  min-width: 0 !important;
+  min-height: 60px !important;
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  gap: 4px !important;
+  border-radius: 22px !important;
+  color: rgba(8, 63, 82, 0.58) !important;
+  text-decoration: none !important;
+  background: transparent !important;
+  font-size: 0.62rem !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.01em !important;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.mobileAppExperience[data-mobile-theme="dark"] .mobileNativeBottomNav.premiumBottomNav a {
+  color: rgba(255, 243, 223, 0.58) !important;
+}
+
+.mobileNativeBottomNav.premiumBottomNav a:hover,
+.mobileNativeBottomNav.premiumBottomNav a:focus-visible {
+  color: var(--mobile-text) !important;
+  outline: none !important;
+}
+
+.mobileNativeBottomNav.premiumBottomNav a.active {
+  color: #fffaf2 !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.26), transparent 56%),
+    linear-gradient(145deg, var(--mobile-teal), var(--mobile-deep)) !important;
+  box-shadow:
+    0 14px 26px rgba(8, 63, 82, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+  transform: translateY(-2px) !important;
+}
+
+.mobileAppExperience[data-mobile-theme="dark"] .mobileNativeBottomNav.premiumBottomNav a.active {
+  color: #fffaf2 !important;
+  box-shadow:
+    0 16px 30px rgba(0, 0, 0, 0.34),
+    0 0 26px rgba(58, 166, 172, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.premiumNavIconWrap {
+  width: 26px !important;
+  height: 24px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: currentColor !important;
+}
+
+.premiumNavIconWrap svg {
+  display: block !important;
+}
+
+.mobileNativeBottomNav.premiumBottomNav a strong {
+  display: block !important;
+  max-width: 100% !important;
+  color: currentColor !important;
+  font-size: 0.58rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.mobileNativeBottomNav.premiumBottomNav a em {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 5px !important;
+  width: 4px !important;
+  height: 4px !important;
+  border-radius: 999px !important;
+  opacity: 0 !important;
+  transform: translateX(-50%) scale(0.4) !important;
+  background: currentColor !important;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease !important;
+}
+
+.mobileNativeBottomNav.premiumBottomNav a.active em {
+  opacity: 0.82 !important;
+  transform: translateX(-50%) scale(1) !important;
+}
+
+.mobileHeaderActions .mobileThemeButton,
+.mobileHeaderActions .mobileMenuButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+
+.mobileDrawerLinks a {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.mobileDrawerLinks a svg {
+  color: currentColor !important;
+  flex: 0 0 auto !important;
+}
+
+.mobileAppExperience {
+  padding-bottom: 104px !important;
+}
+
+@media (max-width: 380px) {
+  .mobileNativeBottomNav.premiumBottomNav {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    height: 72px !important;
+    padding: 7px !important;
+    border-radius: 24px !important;
+  }
+
+  .mobileNativeBottomNav.premiumBottomNav a {
+    min-height: 56px !important;
+    border-radius: 18px !important;
+  }
+
+  .premiumNavIconWrap {
+    width: 24px !important;
+    height: 22px !important;
+  }
+
+  .mobileNativeBottomNav.premiumBottomNav a strong {
+    font-size: 0.52rem !important;
+  }
+}
