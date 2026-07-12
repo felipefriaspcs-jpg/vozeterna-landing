@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Copy, Share2 } from "lucide-react";
 
 export default function ShareMemoryButton({
@@ -10,6 +10,11 @@ export default function ShareMemoryButton({
   className = "",
 }) {
   const [status, setStatus] = useState("");
+  const [canNativeShare, setCanNativeShare] = useState(false);
+
+  useEffect(() => {
+    setCanNativeShare(typeof navigator !== "undefined" && Boolean(navigator.share));
+  }, []);
 
   async function handleShare(event) {
     event.preventDefault();
@@ -67,7 +72,7 @@ export default function ShareMemoryButton({
     >
       {status === "shared" || status === "copied" ? (
         <Check size={15} strokeWidth={2.4} />
-      ) : navigator?.share ? (
+      ) : canNativeShare ? (
         <Share2 size={15} strokeWidth={2.4} />
       ) : (
         <Copy size={15} strokeWidth={2.4} />

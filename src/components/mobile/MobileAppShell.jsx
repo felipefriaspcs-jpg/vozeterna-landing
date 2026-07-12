@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
-  Activity,
   BookOpen,
   FolderHeart,
+  Globe2,
   Home,
   LibraryBig,
   Menu,
@@ -25,7 +27,7 @@ const copy = {
     themeLight: "Light",
     menu: "Menu",
     close: "Close",
-    dashboard: "Dashboard",
+    dashboard: "Home",
     feed: "Feed",
     profile: "Profile",
     library: "Library",
@@ -41,6 +43,8 @@ const copy = {
     fullView: "Full view",
     online: "Online",
     offline: "Offline",
+    onlineText: "Ready to save memories",
+    offlineText: "You can draft memories and sync later",
   },
   es: {
     themeDark: "Oscuro",
@@ -48,7 +52,7 @@ const copy = {
     menu: "Menú",
     close: "Cerrar",
     dashboard: "Inicio",
-    feed: "Actividad",
+    feed: "Red",
     profile: "Perfil",
     library: "Biblioteca",
     collections: "Álbumes",
@@ -63,13 +67,15 @@ const copy = {
     fullView: "Vista completa",
     online: "En línea",
     offline: "Sin conexión",
+    onlineText: "Listo para guardar recuerdos",
+    offlineText: "Puedes crear borradores y sincronizar después",
   },
 };
 
 function getNavItems(t) {
   return [
     { href: "/mobile", label: t.dashboard, icon: Home },
-    { href: "/mobile/feed", label: t.feed, icon: Activity },
+    { href: "/mobile/feed", label: t.feed, icon: Globe2 },
     { href: "/mobile/library", label: t.library, icon: LibraryBig },
     { href: "/mobile/profiles", label: t.profile, icon: UserRound },
     { href: "/mobile/record", label: t.record, icon: Mic2 },
@@ -79,14 +85,15 @@ function getNavItems(t) {
 function getMenuItems(t) {
   return [
     { href: "/mobile", label: t.dashboard, icon: Home },
-    { href: "/mobile/profiles", label: t.profile, icon: UserRound },
+    { href: "/mobile/feed", label: t.feed, icon: Globe2 },
     { href: "/mobile/library", label: t.library, icon: LibraryBig },
+    { href: "/mobile/profiles", label: t.profile, icon: UserRound },
     { href: "/mobile/collections", label: t.collections, icon: FolderHeart },
     { href: "/mobile/record", label: t.record, icon: Mic2 },
     { href: "/mobile/upload", label: t.upload, icon: BookOpen },
     { href: "/mobile/consent", label: t.consent, icon: BookOpen },
     { href: "/mobile/account", label: t.account, icon: UserRound },
-    { href: "/", label: t.website, icon: Home },
+    { href: "/", label: t.website, icon: Globe2 },
   ];
 }
 
@@ -112,7 +119,10 @@ export default function MobileAppShell({ children }) {
     setSimpleView(savedSimple === "true");
 
     setLanguage(getInitialMobileLanguage());
-    setIsOnline(navigator.onLine);
+
+    if (typeof navigator !== "undefined") {
+      setIsOnline(navigator.onLine);
+    }
 
     function handleLanguageChange(event) {
       if (event.detail === "en" || event.detail === "es") {
@@ -189,7 +199,7 @@ export default function MobileAppShell({ children }) {
       <div className={isOnline ? "mobileConnectionBar online" : "mobileConnectionBar offline"}>
         <span />
         <strong>{isOnline ? t.online : t.offline}</strong>
-        <p>{isOnline ? "Ready to save memories" : "You can draft memories and sync later"}</p>
+        <p>{isOnline ? t.onlineText : t.offlineText}</p>
       </div>
 
       {menuOpen && (
@@ -246,9 +256,7 @@ export default function MobileAppShell({ children }) {
         </div>
       )}
 
-      <div className="mobileNativeContent">
-        {children}
-      </div>
+      <div className="mobileNativeContent">{children}</div>
 
       <nav className="mobileNativeBottomNav premiumBottomNav" aria-label="Mobile app navigation">
         {navItems.map((item) => {
