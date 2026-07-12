@@ -89,18 +89,15 @@ export default function FamilyActivityFeed({ limit = 20 }) {
     setFeedError("");
 
     const { data, error } = await supabase
-      .from("vault_activity")
+      .from("network_activity")
       .select(`
         id,
         activity_type,
         title,
         created_at,
         memory_id,
-        loved_one_id,
-        loved_ones (
-          id,
-          full_name
-        )
+        vault_id,
+        network_id
       `)
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -157,42 +154,32 @@ export default function FamilyActivityFeed({ limit = 20 }) {
           {activities.map((activity) => {
             const Icon = getActivityIcon(activity.activity_type);
             const activityTitle = activity.title || getActivityLabel(activity.activity_type);
+            const activityPath = activity.memory_id
+              ? `/app/memories/${activity.memory_id}`
+              : "/mobile/feed";
+
             const memoryUrl =
               typeof window !== "undefined"
-                ? `${window.location.origin}${
-                    activity.memory_id
-                      ? `/app/memories/${activity.memory_id}`
-                      : `/app/loved-ones/${activity.loved_one_id}`
-                  }`
+                ? `${window.location.origin}${activityPath}`
                 : "";
 
             return (
               <article className="familyFeedItem" key={activity.id}>
-                <Link
-                  href={
-                    activity.memory_id
-                      ? `/app/memories/${activity.memory_id}`
-                      : `/app/loved-ones/${activity.loved_one_id}`
-                  }
-                  className="familyFeedMainLink"
-                >
+                <Link href={activityPath} className="familyFeedMainLink">
                   <span className="familyFeedIcon">
                     <Icon size={18} strokeWidth={2.2} />
                   </span>
 
                   <div>
                     <strong>{activityTitle}</strong>
-                    <p>
-                      {activity.loved_ones?.full_name || "Family vault"} ·{" "}
-                      {formatActivityDate(activity.created_at)}
-                    </p>
+                    <p>{formatActivityDate(activity.created_at)}</p>
                   </div>
                 </Link>
 
                 <ShareMemoryButton
                   className="familyFeedShare"
                   title={activityTitle}
-                  text={`A private VozEterna family memory update: ${activityTitle}`}
+                  text={`A private VozEterna family update: ${activityTitle}`}
                   url={memoryUrl}
                 />
               </article>
