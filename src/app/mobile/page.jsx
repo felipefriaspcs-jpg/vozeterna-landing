@@ -1,8 +1,121 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
+import {
+  getInitialMobileLanguage,
+  setStoredMobileLanguage,
+} from "../../components/mobile/mobileLanguage";
+
+const copy = {
+  en: {
+    back: "Back to VozEterna App",
+    mvp: "MVP",
+    label: "Family Legacy",
+    title: "Family Legacy Vault",
+    subtitle: "Preserve voice memories, video messages, photos, prayers, stories, and family-approved memorial moments in one private legacy vault.",
+    create: "Create profile",
+    record: "Record memory",
+    profiles: "Profiles",
+    lovedOnes: "Loved Ones",
+    profilesText: "Manage profiles for family and close friends.",
+    memories: "Memories",
+    savedItems: "Saved Items",
+    memoriesText: "Photos, audio, video, notes, and keepsakes saved.",
+    albums: "Albums",
+    albumsTitle: "Albums",
+    albumsText: "Curated memory collections.",
+    consent: "Consent",
+    consentTitle: "Consent",
+    consentText: "Signed consent records.",
+    protectedVault: "Protected Vault",
+    privateDefault: "Private by default",
+    storageUsed: "Storage used",
+    storageLimit: "of 50 MB",
+    vaultProgress: "Vault Progress",
+    checklistConsent: "Consent signed",
+    checklistProfiles: "Loved One profiles",
+    checklistMemory: "Add first memory",
+    checklistPublic: "Enable public page",
+    checklistReview: "Review recordings",
+    checklistApprove: "Approve for public page",
+    promptLabel: "Memory Starter",
+    promptTitle: "Today’s prompt",
+    promptCta: "Record this memory",
+    storageTipGood: "Plenty of space available.",
+    storageTipMid: "Storage is growing. Consider uploading shorter clips.",
+    storageTipHigh: "Storage is almost full. Compress videos or remove duplicates.",
+    featuresStart: "Start here",
+    featuresConsent: "Consent & Agreements",
+    featuresConsentText: "Manage family consents and permissions.",
+    featuresProfiles: "Profiles",
+    featuresProfilesTitle: "Loved One Profiles",
+    featuresProfilesText: "Care pages for the people who matter.",
+    prompts: [
+      "Tell a favorite childhood memory.",
+      "Share a family recipe and who taught it to you.",
+      "Describe a tradition you want your family to remember.",
+      "Record a blessing for someone you love.",
+      "Tell the story behind an old photo.",
+      "Share advice you wish someone had given you earlier.",
+      "Describe the home, town, or place where your family started.",
+    ],
+  },
+  es: {
+    back: "Volver a VozEterna App",
+    mvp: "MVP",
+    label: "Legado Familiar",
+    title: "Bóveda de Legado Familiar",
+    subtitle: "Preserva recuerdos de voz, videos, fotos, oraciones, historias y momentos familiares aprobados en una bóveda privada.",
+    create: "Crear perfil",
+    record: "Grabar recuerdo",
+    profiles: "Perfiles",
+    lovedOnes: "Seres queridos",
+    profilesText: "Administra perfiles de familia y personas cercanas.",
+    memories: "Recuerdos",
+    savedItems: "Guardados",
+    memoriesText: "Fotos, audio, video, notas y recuerdos guardados.",
+    albums: "Álbumes",
+    albumsTitle: "Álbumes",
+    albumsText: "Colecciones familiares organizadas.",
+    consent: "Consentimiento",
+    consentTitle: "Consentimiento",
+    consentText: "Registros firmados guardados.",
+    protectedVault: "Bóveda protegida",
+    privateDefault: "Privada por defecto",
+    storageUsed: "Almacenamiento usado",
+    storageLimit: "de 50 MB",
+    vaultProgress: "Progreso de la bóveda",
+    checklistConsent: "Consentimiento firmado",
+    checklistProfiles: "Perfiles creados",
+    checklistMemory: "Agregar primer recuerdo",
+    checklistPublic: "Activar página pública",
+    checklistReview: "Revisar grabaciones",
+    checklistApprove: "Aprobar para página pública",
+    promptLabel: "Idea para recordar",
+    promptTitle: "Pregunta de hoy",
+    promptCta: "Grabar este recuerdo",
+    storageTipGood: "Todavía tienes buen espacio disponible.",
+    storageTipMid: "El almacenamiento está creciendo. Considera subir videos más cortos.",
+    storageTipHigh: "El almacenamiento casi está lleno. Comprime videos o elimina duplicados.",
+    featuresStart: "Empieza aquí",
+    featuresConsent: "Consentimiento",
+    featuresConsentText: "Administra permisos y autorizaciones familiares.",
+    featuresProfiles: "Perfiles",
+    featuresProfilesTitle: "Perfiles de seres queridos",
+    featuresProfilesText: "Páginas privadas para las personas importantes.",
+    prompts: [
+      "Cuenta un recuerdo favorito de tu infancia.",
+      "Comparte una receta familiar y quién te la enseñó.",
+      "Describe una tradición que quieres que tu familia recuerde.",
+      "Graba una bendición para alguien que amas.",
+      "Cuenta la historia detrás de una foto antigua.",
+      "Comparte un consejo que te hubiera gustado recibir antes.",
+      "Describe el hogar, pueblo o lugar donde empezó tu familia.",
+    ],
+  },
+};
 
 function formatStorage(bytes) {
   const safeBytes = Number(bytes) || 0;
@@ -12,6 +125,7 @@ function formatStorage(bytes) {
 }
 
 export default function MobileDashboardPage() {
+  const [language, setLanguage] = useState("en");
   const [user, setUser] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [stats, setStats] = useState({
@@ -23,10 +137,39 @@ export default function MobileDashboardPage() {
     storageBytes: 0,
   });
 
+  const t = copy[language] || copy.en;
+
+  const dailyPrompt = useMemo(() => {
+    const dayNumber = Math.floor(Date.now() / 86400000);
+    return t.prompts[dayNumber % t.prompts.length];
+  }, [t.prompts]);
+
   const storageLimitBytes = 50 * 1024 * 1024;
   const storageBytes = Number(stats.storageBytes) || 0;
   const storagePercent = Math.min(100, Math.max(0, Math.round((storageBytes / storageLimitBytes) * 100)));
   const storageDisplay = loadingStats ? "—" : formatStorage(storageBytes);
+  const storageTip =
+    storagePercent >= 80
+      ? t.storageTipHigh
+      : storagePercent >= 50
+        ? t.storageTipMid
+        : t.storageTipGood;
+
+  useEffect(() => {
+    setLanguage(getInitialMobileLanguage());
+
+    function handleLanguageChange(event) {
+      if (event.detail === "en" || event.detail === "es") {
+        setLanguage(event.detail);
+      }
+    }
+
+    window.addEventListener("vozeterna-language-change", handleLanguageChange);
+
+    return () => {
+      window.removeEventListener("vozeterna-language-change", handleLanguageChange);
+    };
+  }, []);
 
   useEffect(() => {
     async function loadStats() {
@@ -78,20 +221,25 @@ export default function MobileDashboardPage() {
     loadStats();
   }, []);
 
+  function changeLanguage(nextLanguage) {
+    setLanguage(nextLanguage);
+    setStoredMobileLanguage(nextLanguage);
+  }
+
   const statCards = [
-    { label: "Profiles", value: stats.profiles, title: "Loved Ones", text: "Manage profiles for family and close friends." },
-    { label: "Memories", value: stats.memories, title: "Saved Items", text: "Photos, audio, video, notes, and keepsakes saved." },
-    { label: "Albums", value: stats.albums, title: "Albums", text: "Curated memory collections." },
-    { label: "Consent", value: stats.consent, title: "Consent", text: "Signed consent records." },
+    { label: t.profiles, value: stats.profiles, title: t.lovedOnes, text: t.profilesText },
+    { label: t.memories, value: stats.memories, title: t.savedItems, text: t.memoriesText },
+    { label: t.albums, value: stats.albums, title: t.albumsTitle, text: t.albumsText },
+    { label: t.consent, value: stats.consent, title: t.consentTitle, text: t.consentText },
   ];
 
   const checklist = [
-    { label: "Consent signed", done: stats.consent > 0 },
-    { label: "Loved One profiles", done: stats.profiles > 0 },
-    { label: "Add first memory", done: stats.memories > 0 },
-    { label: "Enable public page", done: stats.publicPages > 0 },
-    { label: "Review recordings", done: false },
-    { label: "Approve for public page", done: false },
+    { label: t.checklistConsent, done: stats.consent > 0 },
+    { label: t.checklistProfiles, done: stats.profiles > 0 },
+    { label: t.checklistMemory, done: stats.memories > 0 },
+    { label: t.checklistPublic, done: stats.publicPages > 0 },
+    { label: t.checklistReview, done: false },
+    { label: t.checklistApprove, done: false },
   ];
 
   return (
@@ -99,18 +247,16 @@ export default function MobileDashboardPage() {
       <section className="mobileDashboardHeroGrid">
         <div className="mobileHeroMainCard">
           <Link href="/" className="mobileBackLink">
-            Back to VozEterna App <strong>MVP</strong>
+            {t.back} <strong>{t.mvp}</strong>
           </Link>
 
-          <p className="mobileCapsLabel">Family Legacy</p>
-          <h1>Family Legacy Vault</h1>
-          <p className="mobileHeroText">
-            Preserve voice memories, video messages, photos, prayers, stories, and family-approved memorial moments in one private legacy vault.
-          </p>
+          <p className="mobileCapsLabel">{t.label}</p>
+          <h1>{t.title}</h1>
+          <p className="mobileHeroText">{t.subtitle}</p>
 
           <div className="mobileHeroActions">
-            <Link href={user ? "/mobile/profiles/new" : "/mobile/account"}>Create profile</Link>
-            <Link href={user ? "/mobile/record" : "/mobile/account"}>Record memory</Link>
+            <Link href={user ? "/mobile/profiles/new" : "/mobile/account"}>{t.create}</Link>
+            <Link href={user ? "/mobile/record" : "/mobile/account"}>{t.record}</Link>
           </div>
 
           <div className="mobileStatGrid">
@@ -127,15 +273,28 @@ export default function MobileDashboardPage() {
 
         <aside className="mobileHeroStatusCard">
           <div className="mobileLangPill">
-            <span className="active">EN</span>
-            <span>ES</span>
+            <button
+              type="button"
+              className={language === "en" ? "active" : ""}
+              onClick={() => changeLanguage("en")}
+            >
+              EN
+            </button>
+
+            <button
+              type="button"
+              className={language === "es" ? "active" : ""}
+              onClick={() => changeLanguage("es")}
+            >
+              ES
+            </button>
           </div>
 
           <div className="mobileProtectedCard">
             <span>🛡</span>
             <div>
-              <strong>Protected Vault</strong>
-              <p>Private by default</p>
+              <strong>{t.protectedVault}</strong>
+              <p>{t.privateDefault}</p>
             </div>
           </div>
 
@@ -145,14 +304,16 @@ export default function MobileDashboardPage() {
             </div>
 
             <div>
-              <p>Storage used</p>
+              <p>{t.storageUsed}</p>
               <strong>{storageDisplay}</strong>
-              <small>of 50 MB</small>
+              <small>{t.storageLimit}</small>
             </div>
           </div>
 
-          <p className="mobileCapsLabel">Vault Progress</p>
-          <h2>Vault Progress</h2>
+          <p className="mobileStorageTip">{storageTip}</p>
+
+          <p className="mobileCapsLabel">{t.vaultProgress}</p>
+          <h2>{t.vaultProgress}</h2>
 
           <div className="mobileProgressChecklist">
             {checklist.map((item) => (
@@ -165,17 +326,24 @@ export default function MobileDashboardPage() {
         </aside>
       </section>
 
+      <section className="mobilePromptCard">
+        <p className="mobileCapsLabel">{t.promptLabel}</p>
+        <h2>{t.promptTitle}</h2>
+        <p>{dailyPrompt}</p>
+        <Link href={user ? "/mobile/record" : "/mobile/account"}>{t.promptCta}</Link>
+      </section>
+
       <section className="mobileFeatureGrid">
         <Link href="/mobile/consent">
-          <p>Start Here</p>
-          <h2>Consent & Agreements</h2>
-          <span>Manage family consents and permissions.</span>
+          <p>{t.featuresStart}</p>
+          <h2>{t.featuresConsent}</h2>
+          <span>{t.featuresConsentText}</span>
         </Link>
 
         <Link href="/mobile/profiles">
-          <p>Profiles</p>
-          <h2>Loved One Profiles</h2>
-          <span>Care pages for the people who matter.</span>
+          <p>{t.featuresProfiles}</p>
+          <h2>{t.featuresProfilesTitle}</h2>
+          <span>{t.featuresProfilesText}</span>
         </Link>
       </section>
     </>
