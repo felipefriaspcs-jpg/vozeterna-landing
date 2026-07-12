@@ -13518,3 +13518,84 @@ select.appInput {
     display: block !important;
   }
 }
+/* Hard mobile app nav override */
+@media (max-width: 820px) {
+  body {
+    padding-bottom: 92px !important;
+    overflow-x: hidden !important;
+  }
+
+  .appHeader {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 999 !important;
+    min-height: auto !important;
+    padding: 0.5rem 0.75rem !important;
+    background: rgba(255, 250, 241, 0.98) !important;
+    border-bottom: 1px solid rgba(8, 63, 82, 0.08) !important;
+  }
+
+  .appLogoWithImage {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .appLogoImage {
+    height: 36px !important;
+    width: auto !important;
+  }
+
+  .appNav {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 99999 !important;
+
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 8px 8px 14px !important;
+
+    background: rgba(255, 255, 255, 0.97) !important;
+    border-top: 1px solid rgba(8, 63, 82, 0.12) !important;
+    box-shadow: 0 -16px 36px rgba(8, 63, 82, 0.14) !important;
+    border-radius: 0 !important;
+  }
+
+  .appNav a {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 50px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    color: #083f52 !important;
+    background: transparent !important;
+    border-radius: 16px !important;
+    font-size: 0.58rem !important;
+    font-weight: 950 !important;
+    line-height: 1.05 !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  .appNav a[href="/app/upload"],
+  .appNav a[href="/app/account"] {
+    display: none !important;
+  }
+
+  .appNav a.active,
+  .appNav a[aria-current="page"] {
+    color: #fffaf2 !important;
+    background: linear-gradient(145deg, #0f6f78, #083f52) !important;
+  }
+}
