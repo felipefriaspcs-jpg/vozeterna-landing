@@ -3,14 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  Camera,
   CheckCircle2,
   Mic,
   Pause,
-  Play,
   RotateCcw,
   Save,
   Square,
   UploadCloud,
+  Video,
 } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
@@ -18,49 +19,61 @@ import { getInitialMobileLanguage } from "../../../components/mobile/mobileLangu
 const copy = {
   en: {
     label: "Mobile Recorder",
-    title: "Record a voice memory",
+    title: "Record a memory",
     subtitle:
-      "Use your phone microphone to capture a blessing, story, prayer, or family memory without leaving the mobile app.",
-    permissionTitle: "Microphone permission",
-    permissionText:
-      "Tap Start Recording and your phone will ask for microphone access. VozEterna only records after you approve.",
-    start: "Start recording",
+      "Use your phone microphone or selfie camera to capture a blessing, story, prayer, or family memory without leaving the mobile app.",
+    voiceTab: "Voice",
+    videoTab: "Selfie video",
+    micPermission:
+      "Tap Start Voice and your phone will ask for microphone access. VozEterna only records after you approve.",
+    cameraPermission:
+      "Tap Start Selfie Video and your phone will ask for camera and microphone access.",
+    startVoice: "Start voice",
+    startVideo: "Start selfie video",
     stop: "Stop",
     reset: "Reset",
     save: "Save to vault",
     saving: "Saving...",
     saved: "Memory saved.",
     permissionError:
-      "Microphone permission was blocked or unavailable. Please allow microphone access in your browser settings.",
+      "Permission was blocked or unavailable. Please allow microphone/camera access in your browser settings.",
     uploadInstead: "Upload a file instead",
-    scriptLabel: "Memory starter",
-    scriptPlaceholder: "Write a few words before recording...",
+    scriptLabel: "Memory note",
+    scriptPlaceholder: "Write a few words about this memory...",
     note: "This recorder stays inside the mobile experience.",
     noRecording: "Record something first.",
     signIn: "Please sign in before saving.",
+    ready: "Recording ready",
+    recording: "Recording...",
   },
   es: {
     label: "Grabadora móvil",
-    title: "Graba un recuerdo de voz",
+    title: "Graba un recuerdo",
     subtitle:
-      "Usa el micrófono de tu teléfono para capturar una bendición, historia, oración o recuerdo familiar sin salir de la app móvil.",
-    permissionTitle: "Permiso de micrófono",
-    permissionText:
-      "Toca Iniciar grabación y tu teléfono pedirá acceso al micrófono. VozEterna solo graba después de tu aprobación.",
-    start: "Iniciar grabación",
+      "Usa el micrófono o cámara frontal de tu teléfono para capturar una bendición, historia, oración o recuerdo familiar sin salir de la app móvil.",
+    voiceTab: "Voz",
+    videoTab: "Video selfie",
+    micPermission:
+      "Toca Iniciar voz y tu teléfono pedirá acceso al micrófono. VozEterna solo graba después de tu aprobación.",
+    cameraPermission:
+      "Toca Iniciar video selfie y tu teléfono pedirá acceso a cámara y micrófono.",
+    startVoice: "Iniciar voz",
+    startVideo: "Iniciar video selfie",
     stop: "Detener",
     reset: "Reiniciar",
     save: "Guardar en bóveda",
     saving: "Guardando...",
     saved: "Recuerdo guardado.",
     permissionError:
-      "El permiso del micrófono fue bloqueado o no está disponible. Permite acceso al micrófono en tu navegador.",
+      "El permiso fue bloqueado o no está disponible. Permite acceso al micrófono/cámara en tu navegador.",
     uploadInstead: "Subir archivo",
-    scriptLabel: "Idea para recordar",
-    scriptPlaceholder: "Escribe unas palabras antes de grabar...",
+    scriptLabel: "Nota del recuerdo",
+    scriptPlaceholder: "Escribe unas palabras sobre este recuerdo...",
     note: "Esta grabadora permanece dentro de la experiencia móvil.",
     noRecording: "Primero graba algo.",
     signIn: "Inicia sesión antes de guardar.",
+    ready: "Grabación lista",
+    recording: "Grabando...",
   },
 };
 
@@ -70,24 +83,52 @@ function formatTimer(seconds) {
   return `${mins}:${secs}`;
 }
 
+function pickSupportedMime(kind) {
+  if (kind === "video") {
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")) {
+      return "video/webm;codecs=vp9,opus";
+    }
+
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")) {
+      return "video/webm;codecs=vp8,opus";
+    }
+
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("video/webm")) {
+      return "video/webm";
+    }
+
+    return "";
+  }
+
+  if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm")) {
+    return "audio/webm";
+  }
+
+  return "";
+}
+
 export default function MobileRecordPage() {
   const [language, setLanguage] = useState("en");
+  const [mode, setMode] = useState("voice");
   const [status, setStatus] = useState("idle");
   const [seconds, setSeconds] = useState(0);
-  const [audioUrl, setAudioUrl] = useState("");
-  const [audioBlob, setAudioBlob] = useState(null);
+  const [recordingUrl, setRecordingUrl] = useState("");
+  const [recordingBlob, setRecordingBlob] = useState(null);
+  const [recordingKind, setRecordingKind] = useState("voice");
   const [message, setMessage] = useState("");
   const [script, setScript] = useState("");
   const [saving, setSaving] = useState(false);
+  const [previewActive, setPreviewActive] = useState(false);
 
   const recorderRef = useRef(null);
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
+  const videoRef = useRef(null);
 
   const t = copy[language] || copy.en;
   const isRecording = status === "recording";
-  const hasRecording = Boolean(audioBlob && audioUrl);
+  const hasRecording = Boolean(recordingBlob && recordingUrl);
 
   useEffect(() => {
     setLanguage(getInitialMobileLanguage());
@@ -104,15 +145,27 @@ export default function MobileRecordPage() {
       window.removeEventListener("vozeterna-language-change", handleLanguageChange);
       cleanupStream();
       clearInterval(timerRef.current);
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      if (recordingUrl) URL.revokeObjectURL(recordingUrl);
     };
   }, []);
+
+  useEffect(() => {
+    if (videoRef.current && streamRef.current && mode === "video" && isRecording) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [mode, isRecording]);
 
   function cleanupStream() {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setPreviewActive(false);
   }
 
   function startTimer() {
@@ -126,7 +179,29 @@ export default function MobileRecordPage() {
     clearInterval(timerRef.current);
   }
 
-  async function startRecording() {
+  function resetRecording() {
+    stopTimer();
+
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.stop();
+    }
+
+    cleanupStream();
+
+    if (recordingUrl) {
+      URL.revokeObjectURL(recordingUrl);
+    }
+
+    chunksRef.current = [];
+    setRecordingUrl("");
+    setRecordingBlob(null);
+    setSeconds(0);
+    setStatus("idle");
+    setMessage("");
+  }
+
+  async function startRecording(kind) {
+    setMode(kind);
     setMessage("");
 
     if (!navigator?.mediaDevices?.getUserMedia) {
@@ -135,22 +210,40 @@ export default function MobileRecordPage() {
     }
 
     try {
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      if (recordingUrl) {
+        URL.revokeObjectURL(recordingUrl);
       }
 
-      setAudioUrl("");
-      setAudioBlob(null);
+      setRecordingUrl("");
+      setRecordingBlob(null);
+      setRecordingKind(kind);
       chunksRef.current = [];
       setSeconds(0);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const constraints =
+        kind === "video"
+          ? {
+              audio: true,
+              video: {
+                facingMode: "user",
+                width: { ideal: 720 },
+                height: { ideal: 1280 },
+              },
+            }
+          : {
+              audio: true,
+              video: false,
+            };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "";
+      if (kind === "video" && videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setPreviewActive(true);
+      }
 
+      const mimeType = pickSupportedMime(kind);
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       recorderRef.current = recorder;
 
@@ -161,14 +254,16 @@ export default function MobileRecordPage() {
       };
 
       recorder.onstop = () => {
+        const fallbackType = kind === "video" ? "video/webm" : "audio/webm";
         const blob = new Blob(chunksRef.current, {
-          type: mimeType || "audio/webm",
+          type: mimeType || fallbackType,
         });
 
         const url = URL.createObjectURL(blob);
 
-        setAudioBlob(blob);
-        setAudioUrl(url);
+        setRecordingBlob(blob);
+        setRecordingUrl(url);
+        setRecordingKind(kind);
         setStatus("ready");
         cleanupStream();
       };
@@ -177,7 +272,7 @@ export default function MobileRecordPage() {
       setStatus("recording");
       startTimer();
     } catch (error) {
-      console.error("Microphone error:", error);
+      console.error("Recorder permission error:", error);
       setStatus("idle");
       cleanupStream();
       stopTimer();
@@ -193,30 +288,10 @@ export default function MobileRecordPage() {
     stopTimer();
   }
 
-  function resetRecording() {
-    stopTimer();
-    cleanupStream();
-
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      recorderRef.current.stop();
-    }
-
-    if (audioUrl) {
-      URL.revokeObjectURL(audioUrl);
-    }
-
-    chunksRef.current = [];
-    setAudioUrl("");
-    setAudioBlob(null);
-    setSeconds(0);
-    setStatus("idle");
-    setMessage("");
-  }
-
   async function saveRecording() {
     setMessage("");
 
-    if (!audioBlob) {
+    if (!recordingBlob) {
       setMessage(t.noRecording);
       return;
     }
@@ -233,13 +308,15 @@ export default function MobileRecordPage() {
       return;
     }
 
-    const fileName = `mobile-voice-${Date.now()}.webm`;
-    const filePath = `${user.id}/mobile-recordings/${fileName}`;
+    const extension = recordingKind === "video" ? "webm" : "webm";
+    const folder = recordingKind === "video" ? "mobile-videos" : "mobile-recordings";
+    const fileName = `mobile-${recordingKind}-${Date.now()}.${extension}`;
+    const filePath = `${user.id}/${folder}/${fileName}`;
 
     const uploadResult = await supabase.storage
       .from("family-media")
-      .upload(filePath, audioBlob, {
-        contentType: audioBlob.type || "audio/webm",
+      .upload(filePath, recordingBlob, {
+        contentType: recordingBlob.type || (recordingKind === "video" ? "video/webm" : "audio/webm"),
         upsert: false,
       });
 
@@ -249,16 +326,23 @@ export default function MobileRecordPage() {
       return;
     }
 
+    const title =
+      script?.trim()
+        ? script.trim().slice(0, 80)
+        : recordingKind === "video"
+          ? "Mobile selfie video memory"
+          : "Mobile voice memory";
+
     const insertResult = await supabase.from("media_assets").insert({
       user_id: user.id,
       file_name: fileName,
       file_path: filePath,
-      file_type: audioBlob.type || "audio/webm",
-      file_size: audioBlob.size,
-      title: script?.trim() ? script.trim().slice(0, 80) : "Mobile voice memory",
+      file_type: recordingBlob.type || (recordingKind === "video" ? "video/webm" : "audio/webm"),
+      file_size: recordingBlob.size,
+      title,
       description: script?.trim() || null,
       visibility: "private",
-      memory_type: "voice",
+      memory_type: recordingKind === "video" ? "video" : "voice",
       memory_note: script?.trim() || null,
     });
 
@@ -281,21 +365,70 @@ export default function MobileRecordPage() {
       </div>
 
       <section className="mobileRecorderPanel">
-        <div className={isRecording ? "mobileRecorderOrb recording" : "mobileRecorderOrb"}>
-          <Mic size={36} strokeWidth={2.2} />
+        <div className="mobileRecorderModeTabs">
+          <button
+            type="button"
+            className={mode === "voice" ? "active" : ""}
+            onClick={() => {
+              if (!isRecording) setMode("voice");
+            }}
+          >
+            <Mic size={16} />
+            {t.voiceTab}
+          </button>
+
+          <button
+            type="button"
+            className={mode === "video" ? "active" : ""}
+            onClick={() => {
+              if (!isRecording) setMode("video");
+            }}
+          >
+            <Camera size={16} />
+            {t.videoTab}
+          </button>
         </div>
+
+        {mode === "video" ? (
+          <div className={previewActive ? "mobileCameraPreview active" : "mobileCameraPreview"}>
+            {isRecording ? (
+              <video ref={videoRef} autoPlay playsInline muted />
+            ) : recordingKind === "video" && recordingUrl ? (
+              <video src={recordingUrl} controls playsInline />
+            ) : (
+              <div>
+                <Camera size={36} />
+                <span>{t.cameraPermission}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className={isRecording ? "mobileRecorderOrb recording" : "mobileRecorderOrb"}>
+            <Mic size={36} strokeWidth={2.2} />
+          </div>
+        )}
 
         <div className="mobileRecorderTimer">{formatTimer(seconds)}</div>
 
         <p className="mobileRecorderStatus">
-          {isRecording ? "Recording..." : hasRecording ? "Recording ready" : t.permissionText}
+          {isRecording
+            ? t.recording
+            : hasRecording
+              ? t.ready
+              : mode === "video"
+                ? t.cameraPermission
+                : t.micPermission}
         </p>
 
         <div className="mobileRecorderControls">
           {!isRecording ? (
-            <button type="button" onClick={startRecording} className="mobileRecorderPrimary">
-              <Mic size={17} />
-              {t.start}
+            <button
+              type="button"
+              onClick={() => startRecording(mode)}
+              className="mobileRecorderPrimary"
+            >
+              {mode === "video" ? <Video size={17} /> : <Mic size={17} />}
+              {mode === "video" ? t.startVideo : t.startVoice}
             </button>
           ) : (
             <button type="button" onClick={stopRecording} className="mobileRecorderDanger">
@@ -310,9 +443,9 @@ export default function MobileRecordPage() {
           </button>
         </div>
 
-        {audioUrl && (
+        {recordingKind === "voice" && recordingUrl && (
           <div className="mobileAudioPreview">
-            <audio src={audioUrl} controls />
+            <audio src={recordingUrl} controls />
           </div>
         )}
       </section>
