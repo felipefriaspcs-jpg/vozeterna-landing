@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
+  Camera,
   FileText,
   Image as ImageIcon,
   Mic2,
@@ -26,6 +27,9 @@ const copy = {
     empty: "No memories connected yet.",
     upload: "Add memory",
     invite: "QR invite",
+    updatePhoto: "Update photo",
+    savingPhoto: "Saving photo...",
+    photoSaved: "Profile photo updated.",
     privateArchive: "Private family archive.",
     familyVault: "Family vault",
     share: {
@@ -46,6 +50,9 @@ const copy = {
     empty: "Todavía no hay recuerdos conectados.",
     upload: "Agregar recuerdo",
     invite: "Invitar QR",
+    updatePhoto: "Actualizar foto",
+    savingPhoto: "Guardando foto...",
+    photoSaved: "Foto del perfil actualizada.",
     privateArchive: "Archivo familiar privado.",
     familyVault: "Bóveda familiar",
     share: {
@@ -68,12 +75,16 @@ function getMemoryIcon(type) {
 export default function MobileProfileDetailPage() {
   const params = useParams();
   const vaultId = params?.id;
+  const photoInputRef = useRef(null);
 
   const [language, setLanguage] = useState("en");
   const [vault, setVault] = useState(null);
+  const [coverUrl, setCoverUrl] = useState("");
   const [memories, setMemories] = useState([]);
   const [signedUrls, setSignedUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoMessage, setPhotoMessage] = useState("");
 
   const t = copy[language] || copy.en;
 
@@ -104,23 +115,26 @@ export default function MobileProfileDetailPage() {
 
     const { data: vaultData, error: vaultError } = await supabase
       .from("vaults")
-      .select("id, network_id, title, subject_name, relationship_label, description, created_at")
+      .select("id, network_id, title, subject_name, relationship_label, description, cover_image_path, created_at")
       .eq("id", id)
       .maybeSingle();
 
-    if (vaultError) {
-      console.error("Mobile profile detail error:", vaultError.message);
+    if (vaultError || !vaultData) {
+      if (vaultError) console.error("Mobile profile detail error:", vaultError.message);
       setVault(null);
       setMemories([]);
       setLoading(false);
       return;
     }
 
-    if (!vaultData) {
-      setVault(null);
-      setMemories([]);
-      setLoading(false);
-      return;
+    let nextCoverUrl = "";
+
+    if (vaultData.cover_image_path) {
+      const { data: signedCover } = await supabase.storage
+        .from("family-media")
+        .createSignedUrl(vaultData.cover_image_path, 3600);
+
+      nextCoverUrl = signedCover?.signedUrl || "";
     }
 
     const { data: memoryData, error: memoryError } = await supabase
@@ -151,9 +165,61 @@ export default function MobileProfileDetailPage() {
     );
 
     setVault(vaultData);
+    setCoverUrl(nextCoverUrl);
     setMemories(rows);
     setSignedUrls(urls);
     setLoading(false);
+  }
+
+  async function updateProfilePhoto(event) {
+    const file = event.target.files?.[0];
+    if (!file || !vault) return;
+
+    setPhotoSaving(true);
+    setPhotoMessage("");
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("Please sign in first.");
+      }
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
+      const filePath = `${user.id}/profile-covers/${vault.id}-${Date.now()}-${safeName}`;
+
+      const uploadResult = await supabase.storage
+        .from("family-media")
+        .upload(filePath, file, {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+
+      if (uploadResult.error) {
+        throw new Error(uploadResult.error.message);
+      }
+
+      const updateResult = await supabase
+        .from("vaults")
+        .update({
+          cover_image_path: filePath,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", vault.id);
+
+      if (updateResult.error) {
+        throw new Error(updateResult.error.message);
+      }
+
+      setPhotoMessage(t.photoSaved);
+      loadProfile(vault.id);
+    } catch (error) {
+      setPhotoMessage(error.message || "Could not update profile photo.");
+    } finally {
+      setPhotoSaving(false);
+    }
   }
 
   if (loading) {
@@ -184,14 +250,42 @@ export default function MobileProfileDetailPage() {
 
   return (
     <section className="mobileScreenStack">
-      <div className="mobileScreenHero">
+      <div className="mobileScreenHero mobileProfileHero">
+        {coverUrl ? (
+          <img src={coverUrl} alt={vault.subject_name || vault.title} className="mobileProfileCover" />
+        ) : (
+          <div className="mobileProfileCoverPlaceholder">
+            <Camera size={30} />
+          </div>
+        )}
+
         <p className="mobileCapsLabel">{t.label}</p>
         <h1>{vault.subject_name || vault.title}</h1>
         <p>{vault.description || t.privateArchive}</p>
+
+        <button
+          type="button"
+          className="mobilePhotoButton"
+          onClick={() => photoInputRef.current?.click()}
+          disabled={photoSaving}
+        >
+          <Camera size={16} />
+          {photoSaving ? t.savingPhoto : t.updatePhoto}
+        </button>
+
+        <input
+          ref={photoInputRef}
+          type="file"
+          hidden
+          accept="image/*"
+          onChange={updateProfilePhoto}
+        />
+
+        {photoMessage && <p className="mobileFormMessage">{photoMessage}</p>}
       </div>
 
       <section className="mobileActionGrid">
-        <Link href="/mobile/upload" className="mobileActionCard primary">
+        <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileActionCard primary">
           <UploadCloud size={20} />
           <strong>{t.upload}</strong>
         </Link>
@@ -211,7 +305,7 @@ export default function MobileProfileDetailPage() {
         {memories.length === 0 ? (
           <div className="mobileEmptyCard">
             <p>{t.empty}</p>
-            <Link href="/mobile/upload" className="mobileRecorderPrimary">
+            <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileRecorderPrimary">
               {t.upload}
             </Link>
           </div>

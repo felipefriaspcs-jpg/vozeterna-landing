@@ -13,6 +13,8 @@ const copy = {
     subtitle: "Choose a photo, audio file, video, or document from your phone without leaving the mobile app.",
     choose: "Choose file",
     selected: "Selected file",
+    profile: "Attach to profile",
+    profileFallback: "Default family vault",
     note: "Memory note",
     placeholder: "Write a short note about this memory...",
     upload: "Upload memory",
@@ -20,7 +22,7 @@ const copy = {
     saved: "Memory uploaded.",
     signIn: "Please sign in before uploading.",
     noFile: "Choose a file first.",
-    privateNote: "Files are private by default and saved inside your family network vault.",
+    privateNote: "Files are private by default and saved inside the selected profile.",
   },
   es: {
     label: "Subida móvil",
@@ -28,6 +30,8 @@ const copy = {
     subtitle: "Elige una foto, audio, video o documento desde tu teléfono sin salir de la app móvil.",
     choose: "Elegir archivo",
     selected: "Archivo seleccionado",
+    profile: "Conectar a perfil",
+    profileFallback: "Bóveda familiar predeterminada",
     note: "Nota del recuerdo",
     placeholder: "Escribe una nota corta sobre este recuerdo...",
     upload: "Subir recuerdo",
@@ -35,7 +39,7 @@ const copy = {
     saved: "Recuerdo subido.",
     signIn: "Inicia sesión antes de subir.",
     noFile: "Primero elige un archivo.",
-    privateNote: "Los archivos son privados por defecto y se guardan dentro de tu bóveda familiar.",
+    privateNote: "Los archivos son privados por defecto y se guardan dentro del perfil seleccionado.",
   },
 };
 
@@ -43,6 +47,8 @@ export default function MobileUploadPage() {
   const [language, setLanguage] = useState("en");
   const [file, setFile] = useState(null);
   const [note, setNote] = useState("");
+  const [vaults, setVaults] = useState([]);
+  const [selectedVaultId, setSelectedVaultId] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
@@ -64,6 +70,31 @@ export default function MobileUploadPage() {
       window.removeEventListener("vozeterna-language-change", handleLanguageChange);
     };
   }, []);
+
+  useEffect(() => {
+    loadVaults();
+  }, []);
+
+  async function loadVaults() {
+    const queryVaultId =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("vaultId") || ""
+        : "";
+
+    const { data } = await supabase
+      .from("vaults")
+      .select("id, network_id, title, subject_name, relationship_label, description")
+      .order("created_at", { ascending: false });
+
+    const rows = data || [];
+    setVaults(rows);
+
+    if (queryVaultId) {
+      setSelectedVaultId(queryVaultId);
+    } else if (rows.length > 0) {
+      setSelectedVaultId(rows[0].id);
+    }
+  }
 
   async function uploadMemory() {
     setMessage("");
@@ -93,6 +124,7 @@ export default function MobileUploadPage() {
         title: note.trim() ? note.trim().slice(0, 80) : file.name,
         note,
         folder: "mobile-uploads",
+        targetVaultId: selectedVaultId || undefined,
       });
 
       setMessage(t.saved);
@@ -118,6 +150,21 @@ export default function MobileUploadPage() {
       </div>
 
       <section className="mobileFormCard mobileUploadCard">
+        <label>
+          {t.profile}
+          <select
+            value={selectedVaultId}
+            onChange={(event) => setSelectedVaultId(event.target.value)}
+          >
+            <option value="">{t.profileFallback}</option>
+            {vaults.map((vault) => (
+              <option value={vault.id} key={vault.id}>
+                {(vault.subject_name || vault.title) + " · " + (vault.relationship_label || "Vault")}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <button
           type="button"
           className="mobileUploadPicker"

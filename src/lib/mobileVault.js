@@ -154,6 +154,41 @@ export async function ensureDefaultNetworkAndVault(supabase, user) {
   return ensureNetworkAndVaultByType(supabase, user, "family");
 }
 
+export async function resolveTargetVault({
+  supabase,
+  user,
+  targetVaultId,
+  networkType = "family",
+}) {
+  if (targetVaultId) {
+    const { data, error } = await supabase
+      .from("vaults")
+      .select("id, network_id, title, subject_name, relationship_label")
+      .eq("id", targetVaultId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (data?.id && data?.network_id) {
+      return {
+        networkId: data.network_id,
+        vaultId: data.id,
+        vault: data,
+      };
+    }
+  }
+
+  const ensured = await ensureNetworkAndVaultByType(supabase, user, networkType);
+
+  return {
+    networkId: ensured.networkId,
+    vaultId: ensured.vaultId,
+    vault: null,
+  };
+}
+
 export async function createMobileVault({
   supabase,
   user,
@@ -216,6 +251,7 @@ export async function saveMobileMemoryToV2({
   folder = "mobile-uploads",
   forcedType,
   networkType = "family",
+  targetVaultId,
 }) {
   if (!user?.id) {
     throw new Error("Please sign in first.");
@@ -225,7 +261,12 @@ export async function saveMobileMemoryToV2({
     throw new Error("Choose or record a file first.");
   }
 
-  const { networkId, vaultId } = await ensureNetworkAndVaultByType(supabase, user, networkType);
+  const { networkId, vaultId } = await resolveTargetVault({
+    supabase,
+    user,
+    targetVaultId,
+    networkType,
+  });
 
   const fileName = getSafeFileName(file.name || `memory-${Date.now()}.webm`);
   const filePath = `${user.id}/${folder}/${Date.now()}-${fileName}`;
