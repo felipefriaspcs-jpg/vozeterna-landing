@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { getInitialMobileLanguage } from "../mobile/mobileLanguage";
-import ShareMemoryButton from "./ShareMemoryButton";
+import MobileMemoryActions from "../mobile/MobileMemoryActions";
 
 const copy = {
   en: {
@@ -32,6 +32,7 @@ const copy = {
     agoHour: "h ago",
     agoDay: "d ago",
     noDescription: "No description yet.",
+    comments: "Comments",
     labels: {
       reflection_added: "New reflection",
       voice_added: "Voice memory",
@@ -41,12 +42,15 @@ const copy = {
       memory_added: "Family update",
       default: "Family update",
     },
-    share: {
+    actions: {
+      view: "View",
+      edit: "Edit",
+      delete: "Delete",
       share: "Share",
-      shared: "Shared",
       copied: "Copied",
-      copyManually: "Copy manually",
-      textPrefix: "A private VozEterna family update:",
+      comments: "Comments",
+      confirmDelete: "Delete this memory? This cannot be undone.",
+      deleteFailed: "Could not delete memory.",
     },
   },
   es: {
@@ -66,6 +70,7 @@ const copy = {
     agoHour: "h",
     agoDay: "d",
     noDescription: "Sin descripción todavía.",
+    comments: "Comentarios",
     labels: {
       reflection_added: "Nueva reflexión",
       voice_added: "Recuerdo de voz",
@@ -75,12 +80,15 @@ const copy = {
       memory_added: "Actualización familiar",
       default: "Actualización familiar",
     },
-    share: {
+    actions: {
+      view: "Ver",
+      edit: "Editar",
+      delete: "Eliminar",
       share: "Compartir",
-      shared: "Compartido",
       copied: "Copiado",
-      copyManually: "Copiar manualmente",
-      textPrefix: "Una actualización familiar privada de VozEterna:",
+      comments: "Comentarios",
+      confirmDelete: "¿Eliminar este recuerdo? Esto no se puede deshacer.",
+      deleteFailed: "No se pudo eliminar el recuerdo.",
     },
   },
 };
@@ -123,27 +131,6 @@ function formatActivityDate(dateString, t, language) {
   if (diffDays < 7) return `${diffDays}${t.agoDay}`;
 
   return date.toLocaleDateString("en-US");
-}
-
-function FamilyFeedSkeleton({ t }) {
-  return (
-    <section className="familyFeedPanel">
-      <div className="familyFeedHeader">
-        <p>{t.label}</p>
-        <h2>{t.loadingTitle}</h2>
-        <span className="skeletonLine skeletonText" />
-      </div>
-
-      <div className="familyFeedList">
-        {[1, 2, 3].map((item) => (
-          <div className="familyFeedMemoryCard skeletonItem" key={item}>
-            <span className="skeletonLine skeletonTitle" />
-            <span className="skeletonLine skeletonText" />
-          </div>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 export default function FamilyActivityFeed({ limit = 20 }) {
@@ -189,6 +176,8 @@ export default function FamilyActivityFeed({ limit = 20 }) {
         memory_id,
         vault_id,
         network_id,
+        feed_visibility,
+        is_commentable,
         memories (
           id,
           title,
@@ -196,6 +185,7 @@ export default function FamilyActivityFeed({ limit = 20 }) {
           type,
           media_path,
           media_mime_type,
+          feed_visibility,
           created_at
         ),
         vaults (
@@ -239,8 +229,19 @@ export default function FamilyActivityFeed({ limit = 20 }) {
     setLoading(false);
   }
 
+  function removeDeleted(memoryId) {
+    setActivities((current) => current.filter((activity) => activity.memory_id !== memoryId));
+  }
+
   if (loading) {
-    return <FamilyFeedSkeleton t={t} />;
+    return (
+      <section className="familyFeedPanel">
+        <div className="familyFeedHeader">
+          <p>{t.label}</p>
+          <h2>{t.loadingTitle}</h2>
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -291,8 +292,19 @@ export default function FamilyActivityFeed({ limit = 20 }) {
 
                   <div>
                     <strong>{activityTitle}</strong>
-                    <p>{formatActivityDate(activity.created_at, t, language)}</p>
+                    <p className="familyFeedTimestamp">
+                      {formatActivityDate(activity.created_at, t, language)}
+                    </p>
                   </div>
+
+                  {memory?.id && (
+                    <MobileMemoryActions
+                      memory={memory}
+                      activityId={activity.id}
+                      labels={t.actions}
+                      onDeleted={removeDeleted}
+                    />
+                  )}
                 </div>
 
                 {memoryType === "photo" && url && (
@@ -309,17 +321,14 @@ export default function FamilyActivityFeed({ limit = 20 }) {
 
                 <p className="familyFeedDescription">{description}</p>
 
-                <ShareMemoryButton
-                  className="familyFeedShare"
-                  title={activityTitle}
-                  text={`${t.share.textPrefix} ${activityTitle}`}
-                  url={
-                    typeof window !== "undefined"
-                      ? `${window.location.origin}/mobile/feed`
-                      : ""
-                  }
-                  labels={t.share}
-                />
+                <div className="familyFeedActions">
+                  {activity.feed_visibility === "network" && activity.is_commentable && (
+                    <Link href={`/mobile/comments/${activity.id}`} className="familyFeedCommentButton">
+                      <MessageCircle size={16} />
+                      {t.comments}
+                    </Link>
+                  )}
+                </div>
               </article>
             );
           })}

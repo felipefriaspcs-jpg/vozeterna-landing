@@ -49,6 +49,7 @@ export default function MobileUploadPage() {
   const [note, setNote] = useState("");
   const [vaults, setVaults] = useState([]);
   const [selectedVaultId, setSelectedVaultId] = useState("");
+  const [selectedAlbumId, setSelectedAlbumId] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
@@ -76,10 +77,10 @@ export default function MobileUploadPage() {
   }, []);
 
   async function loadVaults() {
-    const queryVaultId =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("vaultId") || ""
-        : "";
+    const queryParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const queryVaultId = queryParams?.get("vaultId") || "";
+    const queryAlbumId = queryParams?.get("albumId") || "";
+    setSelectedAlbumId(queryAlbumId);
 
     const { data } = await supabase
       .from("vaults")

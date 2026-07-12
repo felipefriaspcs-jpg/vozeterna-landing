@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
-import ShareMemoryButton from "../../../components/social/ShareMemoryButton";
+import MobileMemoryActions from "../../../components/mobile/MobileMemoryActions";
 
 const copy = {
   en: {
@@ -25,12 +25,16 @@ const copy = {
     emptyText: "Record a voice message or upload a photo to begin.",
     uploadFirst: "Upload first memory",
     private: "Private",
-    share: {
+    network: "Network feed",
+    actions: {
+      view: "View",
+      edit: "Edit",
+      delete: "Delete",
       share: "Share",
-      shared: "Shared",
       copied: "Copied",
-      copyManually: "Copy manually",
-      textPrefix: "A private VozEterna memory:",
+      comments: "Comments",
+      confirmDelete: "Delete this memory? This cannot be undone.",
+      deleteFailed: "Could not delete memory.",
     },
   },
   es: {
@@ -43,12 +47,16 @@ const copy = {
     emptyText: "Graba un mensaje de voz o sube una foto para empezar.",
     uploadFirst: "Subir primer recuerdo",
     private: "Privado",
-    share: {
+    network: "Feed de red",
+    actions: {
+      view: "Ver",
+      edit: "Editar",
+      delete: "Eliminar",
       share: "Compartir",
-      shared: "Compartido",
       copied: "Copiado",
-      copyManually: "Copiar manualmente",
-      textPrefix: "Un recuerdo privado de VozEterna:",
+      comments: "Comentarios",
+      confirmDelete: "¿Eliminar este recuerdo? Esto no se puede deshacer.",
+      deleteFailed: "No se pudo eliminar el recuerdo.",
     },
   },
 };
@@ -63,6 +71,7 @@ function getMemoryIcon(type) {
 export default function MobileLibraryPage() {
   const [language, setLanguage] = useState("en");
   const [memories, setMemories] = useState([]);
+  const [activitiesByMemory, setActivitiesByMemory] = useState({});
   const [signedUrls, setSignedUrls] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -93,7 +102,7 @@ export default function MobileLibraryPage() {
 
     const { data, error } = await supabase
       .from("memories")
-      .select("id, title, body, type, media_path, media_mime_type, media_size_bytes, created_at, vault_id, network_id")
+      .select("id, title, body, type, media_path, media_mime_type, media_size_bytes, feed_visibility, created_at, vault_id, network_id")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -120,9 +129,30 @@ export default function MobileLibraryPage() {
       })
     );
 
+    const memoryIds = rows.map((memory) => memory.id);
+
+    let activityMap = {};
+
+    if (memoryIds.length > 0) {
+      const { data: activityRows } = await supabase
+        .from("network_activity")
+        .select("id, memory_id, feed_visibility, is_commentable")
+        .in("memory_id", memoryIds);
+
+      activityMap = (activityRows || []).reduce((map, item) => {
+        map[item.memory_id] = item;
+        return map;
+      }, {});
+    }
+
     setSignedUrls(urls);
+    setActivitiesByMemory(activityMap);
     setMemories(rows);
     setLoading(false);
+  }
+
+  function removeDeleted(id) {
+    setMemories((current) => current.filter((memory) => memory.id !== id));
   }
 
   return (
@@ -154,9 +184,20 @@ export default function MobileLibraryPage() {
         {memories.map((memory) => {
           const Icon = getMemoryIcon(memory.type);
           const url = signedUrls[memory.id];
+          const activity = activitiesByMemory[memory.id];
 
           return (
             <article className="mobileMemoryCard" key={memory.id}>
+              <div className="mobileMemoryCardTopActions">
+                <span>{memory.feed_visibility === "network" ? t.network : t.private}</span>
+                <MobileMemoryActions
+                  memory={memory}
+                  activityId={activity?.id}
+                  labels={t.actions}
+                  onDeleted={removeDeleted}
+                />
+              </div>
+
               {memory.type === "photo" && url && (
                 <img src={url} alt={memory.title || "Memory"} />
               )}
@@ -176,21 +217,8 @@ export default function MobileLibraryPage() {
               )}
 
               <div>
-                <span>{t.private}</span>
                 <strong>{memory.title || "Memory"}</strong>
                 {memory.body && <p>{memory.body}</p>}
-
-                <ShareMemoryButton
-                  className="familyFeedShare"
-                  title={memory.title || "VozEterna memory"}
-                  text={`${t.share.textPrefix} ${memory.title || "Memory"}`}
-                  url={
-                    typeof window !== "undefined"
-                      ? `${window.location.origin}/mobile/library`
-                      : ""
-                  }
-                  labels={t.share}
-                />
               </div>
             </article>
           );

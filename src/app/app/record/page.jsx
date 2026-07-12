@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import AudioRecorder from "../../../components/app/AudioRecorder";
 import CameraRecorder from "../../../components/app/CameraRecorder";
 import { supabase } from "../../../lib/supabaseClient";
+import { getRelationshipLabel } from "../../../lib/relationshipLabels";
 import { useAppLanguage } from "../../../lib/useAppLanguage";
 
 const copy = {
@@ -29,45 +29,34 @@ const copy = {
     vaultSecured: "Vault secured",
     recordVoice: "Record Voice Memory",
     recordVideo: "Record Video Memory",
-    prepareTitle: "Prepare the memory",
-    prepareText:
-      "Choose the loved one, type of memory, and an optional note before you record.",
+    voiceMemory: "Voice Memory",
+    videoMemory: "Video Memory",
+    voiceTitle: "Record a voice memory",
+    voiceText: "Ready to record an audio message for your private vault.",
+    videoTitle: "Record a video memory",
+    videoText: "Set up your camera to capture a video memory.",
+    startVoice: "Start Voice Recording",
+    stopVoice: "Stop Recording",
+    saveVoice: "Save Voice Memory",
+    discardVoice: "Discard",
+    saved: "Voice memory saved.",
+    saving: "Saving...",
+    noRecording: "Record something first.",
+    scriptLabel: "Reading sheet",
+    scriptPlaceholder: "Write what you want to say before recording. Example: a blessing, prayer, favorite memory, advice, or message to your family.",
+    saveScriptLabel: "Save this text with the memory",
+    nextTitle: "Next steps after recording",
+    nextSteps: [
+      "Review new recordings",
+      "Tag loved ones after they have a profile",
+      "Save memory",
+      "Approve for public page",
+    ],
     who: "Who is this memory for?",
     kind: "What kind of memory is this?",
     note: "Optional memory note",
     notePlaceholder:
       "Example: Mom's blessing, Dad's advice, Grandma's prayer, or a special family message.",
-    ideasEyebrow: "Need ideas?",
-    ideasTitle: "Record something meaningful",
-    ideasText:
-      "You do not need a perfect speech. A simple message, memory, prayer, or blessing can become priceless to your family later.",
-    privateTitle: "Private by default",
-    privateText:
-      "Recordings stay in your private vault unless you choose to share them on a public memorial page.",
-    calmTitle: "Breathe. Speak slowly.",
-    calmText:
-      "The most valuable recordings usually feel natural. Say it like you would say it to family.",
-    voiceCardTitle: "Voice Memory",
-    voiceCardText: "Record an audio message for your private vault.",
-    videoCardTitle: "Video Memory",
-    videoCardText: "Capture a video memory with your camera.",
-    nextTitle: "Next steps after recording",
-    nextSteps: [
-      "Review new recordings",
-      "Tag loved ones",
-      "Save memory",
-      "Approve for public page",
-    ],
-    tagRule:
-      "Tagging loved ones should happen after they already have their own profile in the vault.",
-    prompts: [
-      "Share a favorite story",
-      "Leave a blessing",
-      "Record a prayer",
-      "Say what made them special",
-      "Tell your family what you want remembered",
-      "Describe a favorite moment",
-    ],
     types: {
       photo_of_person: "Photo of this person",
       photo_from_person: "Photo from this person",
@@ -99,45 +88,34 @@ const copy = {
     vaultSecured: "Bóveda protegida",
     recordVoice: "Grabar recuerdo de voz",
     recordVideo: "Grabar recuerdo en video",
-    prepareTitle: "Prepara el recuerdo",
-    prepareText:
-      "Elige el ser querido, el tipo de recuerdo y una nota opcional antes de grabar.",
+    voiceMemory: "Recuerdo de voz",
+    videoMemory: "Recuerdo en video",
+    voiceTitle: "Graba un recuerdo de voz",
+    voiceText: "Listo para grabar un mensaje de audio para tu bóveda privada.",
+    videoTitle: "Graba un recuerdo en video",
+    videoText: "Configura tu cámara para capturar un recuerdo en video.",
+    startVoice: "Iniciar grabación de voz",
+    stopVoice: "Detener grabación",
+    saveVoice: "Guardar recuerdo de voz",
+    discardVoice: "Descartar",
+    saved: "Recuerdo de voz guardado.",
+    saving: "Guardando...",
+    noRecording: "Primero graba algo.",
+    scriptLabel: "Hoja de lectura",
+    scriptPlaceholder: "Escribe lo que quieres decir antes de grabar. Ejemplo: una bendición, oración, recuerdo favorito, consejo o mensaje para tu familia.",
+    saveScriptLabel: "Guardar este texto con el recuerdo",
+    nextTitle: "Siguientes pasos después de grabar",
+    nextSteps: [
+      "Revisar nuevas grabaciones",
+      "Etiquetar seres queridos después de que tengan perfil",
+      "Guardar recuerdo",
+      "Aprobar para página pública",
+    ],
     who: "¿Para quién es este recuerdo?",
     kind: "¿Qué tipo de recuerdo es?",
     note: "Nota opcional del recuerdo",
     notePlaceholder:
       "Ejemplo: La bendición de mamá, el consejo de papá, la oración de abuela o un mensaje familiar especial.",
-    ideasEyebrow: "¿Necesitas ideas?",
-    ideasTitle: "Graba algo con significado",
-    ideasText:
-      "No necesitas un discurso perfecto. Un mensaje sencillo, recuerdo, oración o bendición puede volverse invaluable para tu familia después.",
-    privateTitle: "Privado por defecto",
-    privateText:
-      "Las grabaciones permanecen en tu bóveda privada a menos que decidas compartirlas en una página memorial pública.",
-    calmTitle: "Respira. Habla con calma.",
-    calmText:
-      "Las grabaciones más valiosas suelen sentirse naturales. Dilo como se lo dirías a tu familia.",
-    voiceCardTitle: "Recuerdo de voz",
-    voiceCardText: "Graba un mensaje de audio para tu bóveda privada.",
-    videoCardTitle: "Recuerdo en video",
-    videoCardText: "Captura un recuerdo en video con tu cámara.",
-    nextTitle: "Siguientes pasos después de grabar",
-    nextSteps: [
-      "Revisar nuevas grabaciones",
-      "Etiquetar seres queridos",
-      "Guardar recuerdo",
-      "Aprobar para página pública",
-    ],
-    tagRule:
-      "Etiquetar seres queridos debe hacerse después de que ya tengan su propio perfil en la bóveda.",
-    prompts: [
-      "Comparte una historia favorita",
-      "Deja una bendición",
-      "Graba una oración",
-      "Di qué hacía especial a esa persona",
-      "Cuenta lo que quieres que tu familia recuerde",
-      "Describe un momento favorito",
-    ],
     types: {
       photo_of_person: "Foto de esta persona",
       photo_from_person: "Foto de esta persona o guardada por ella",
@@ -152,7 +130,7 @@ const copy = {
 
 function GateCard({ eyebrow, title, text, primaryHref, primaryLabel, secondaryHref, secondaryLabel }) {
   return (
-    <main className="appShell recordPageClean">
+    <main className="appShell recordMockPage">
       <section className="recordGateCard">
         <p className="appEyebrow">{eyebrow}</p>
         <h1>{title}</h1>
@@ -162,13 +140,258 @@ function GateCard({ eyebrow, title, text, primaryHref, primaryLabel, secondaryHr
           <Link href={primaryHref} className="appButton">
             {primaryLabel}
           </Link>
-
           <Link href={secondaryHref} className="appButton secondary">
             {secondaryLabel}
           </Link>
         </div>
       </section>
     </main>
+  );
+}
+
+function TealWaveform({ active }) {
+  const bars = Array.from({ length: 46 }, (_, index) => index);
+
+  return (
+    <div className={active ? "tealWaveform active" : "tealWaveform"}>
+      {bars.map((bar) => (
+        <span key={bar} style={{ "--bar-index": bar }} />
+      ))}
+    </div>
+  );
+}
+
+function VoiceRecorderCard({
+  t,
+  user,
+  lovedOneId,
+  memoryType,
+  memoryNote,
+  language,
+}) {
+  const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const chunksRef = useRef([]);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingUrl, setRecordingUrl] = useState("");
+  const [recordingBlob, setRecordingBlob] = useState(null);
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [scriptText, setScriptText] = useState("");
+  const [saveScript, setSaveScript] = useState(true);
+
+  useEffect(() => {
+    return () => {
+      if (recordingUrl) {
+        URL.revokeObjectURL(recordingUrl);
+      }
+
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [recordingUrl]);
+
+  async function startRecording() {
+    setMessage("");
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+
+      const recorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : undefined,
+      });
+
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const url = URL.createObjectURL(blob);
+
+        setRecordingBlob(blob);
+        setRecordingUrl(url);
+        setIsRecording(false);
+
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      setMessage(error.message || "Microphone access was blocked.");
+      setIsRecording(false);
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  }
+
+  async function saveVoiceMemory() {
+    if (!recordingBlob) {
+      setMessage(t.noRecording);
+      return;
+    }
+
+    setSaving(true);
+    setMessage("");
+
+    const finalMemoryNote = [
+      memoryNote,
+      saveScript && scriptText.trim() ? scriptText.trim() : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const fileName = `voice-memory-${Date.now()}.webm`;
+    const filePath = `${user.id}/${lovedOneId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("family-media")
+      .upload(filePath, recordingBlob, {
+        contentType: recordingBlob.type || "audio/webm",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      setSaving(false);
+      setMessage(uploadError.message);
+      return;
+    }
+
+    const { error: insertError } = await supabase.from("media_assets").insert({
+      user_id: user.id,
+      loved_one_id: lovedOneId,
+      file_name: fileName,
+      file_path: filePath,
+      file_type: recordingBlob.type || "audio/webm",
+      file_size: recordingBlob.size,
+      title: language === "es" ? "Recuerdo de voz" : "Voice memory",
+      description: finalMemoryNote || null,
+      visibility: "private",
+      memory_type: memoryType,
+      memory_note: finalMemoryNote || null,
+      show_on_memorial: false,
+    });
+
+    setSaving(false);
+
+    if (insertError) {
+      setMessage(insertError.message);
+      return;
+    }
+
+    setMessage(t.saved);
+
+    if (recordingUrl) {
+      URL.revokeObjectURL(recordingUrl);
+    }
+
+    setRecordingBlob(null);
+    setRecordingUrl("");
+  }
+
+  function resetRecording() {
+    if (recordingUrl) {
+      URL.revokeObjectURL(recordingUrl);
+    }
+
+    setRecordingBlob(null);
+    setRecordingUrl("");
+    setMessage("");
+  }
+
+  return (
+    <div className="recordMockInner">
+      <div className="recordWaveBox">
+        <TealWaveform active={isRecording} />
+        <div className="recordWaveDots">
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+
+      <p>{t.voiceText}</p>
+
+      {recordingUrl && (
+        <audio className="recordAudioPreview" src={recordingUrl} controls />
+      )}
+
+      <div className="recordControlRow">
+        {!isRecording ? (
+          <button type="button" className="recordTealButton" onClick={startRecording}>
+            <span>🎙</span>
+            {t.startVoice}
+          </button>
+        ) : (
+          <button type="button" className="recordTealButton" onClick={stopRecording}>
+            <span>■</span>
+            {t.stopVoice}
+          </button>
+        )}
+
+        {recordingBlob && (
+          <>
+            <button
+              type="button"
+              className="recordTealButton secondary"
+              onClick={saveVoiceMemory}
+              disabled={saving}
+            >
+              {saving ? t.saving : t.saveVoice}
+            </button>
+
+            <button
+              type="button"
+              className="recordTealButton ghost"
+              onClick={resetRecording}
+              disabled={saving}
+            >
+              {t.discardVoice}
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="recordScriptSheet">
+        <label htmlFor="voiceScript">{t.scriptLabel}</label>
+        <textarea
+          id="voiceScript"
+          value={scriptText}
+          onChange={(event) => setScriptText(event.target.value)}
+          placeholder={t.scriptPlaceholder}
+          rows={7}
+        />
+
+        <label className="recordScriptToggle">
+          <input
+            type="checkbox"
+            checked={saveScript}
+            onChange={(event) => setSaveScript(event.target.checked)}
+          />
+          <span>{t.saveScriptLabel}</span>
+        </label>
+      </div>
+
+      {message && <p className="recordMockMessage">{message}</p>}
+    </div>
   );
 }
 
@@ -186,54 +409,43 @@ export default function RecordPage() {
 
   useEffect(() => {
     async function loadRecordSetup() {
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        const currentUser = userData?.user || null;
-        setUser(currentUser);
+      const { data: userData } = await supabase.auth.getUser();
+      const currentUser = userData?.user || null;
+      setUser(currentUser);
 
-        if (!currentUser) {
-          setLoading(false);
-          return;
-        }
-
-        const { data: consentData } = await supabase
-          .from("consent_records")
-          .select("id")
-          .eq("user_id", currentUser.id)
-          .eq("accepted", true)
-          .order("accepted_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        setHasConsent(Boolean(consentData?.id));
-
-        const { data: profilesData, error: profilesError } = await supabase
-          .from("loved_ones")
-          .select("id, full_name, relationship")
-          .order("created_at", { ascending: false });
-
-        if (profilesError) {
-          console.error("Failed to load loved ones:", profilesError.message);
-          setLovedOnes([]);
-          setLoading(false);
-          return;
-        }
-
-        const profiles = profilesData || [];
-        setLovedOnes(profiles);
-
-        if (profiles.length) {
-          const params = new URLSearchParams(window.location.search);
-          const requestedLovedOneId = params.get("lovedOneId");
-          const exists = profiles.some((profile) => profile.id === requestedLovedOneId);
-
-          setSelectedLovedOneId(exists ? requestedLovedOneId : profiles[0].id);
-        }
-      } catch (error) {
-        console.error("Failed to load record page:", error);
-      } finally {
+      if (!currentUser) {
         setLoading(false);
+        return;
       }
+
+      const { data: consentData } = await supabase
+        .from("consent_records")
+        .select("id")
+        .eq("user_id", currentUser.id)
+        .eq("accepted", true)
+        .order("accepted_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setHasConsent(Boolean(consentData?.id));
+
+      const { data: profilesData } = await supabase
+        .from("loved_ones")
+        .select("id, full_name, relationship, relationship_type")
+        .order("created_at", { ascending: false });
+
+      const profiles = profilesData || [];
+      setLovedOnes(profiles);
+
+      if (profiles.length) {
+        const params = new URLSearchParams(window.location.search);
+        const requestedLovedOneId = params.get("lovedOneId");
+        const profileExists = profiles.some((profile) => profile.id === requestedLovedOneId);
+
+        setSelectedLovedOneId(profileExists ? requestedLovedOneId : profiles[0].id);
+      }
+
+      setLoading(false);
     }
 
     loadRecordSetup();
@@ -241,9 +453,14 @@ export default function RecordPage() {
 
   const typeOptions = useMemo(() => Object.entries(t.types), [t.types]);
 
+  function relationshipLabel(profile) {
+    const raw = profile.relationship_type || profile.relationship;
+    return raw ? getRelationshipLabel(raw, language) || raw : "";
+  }
+
   if (loading) {
     return (
-      <main className="appShell recordPageClean">
+      <main className="appShell recordMockPage">
         <section className="recordGateCard">
           <p className="appEyebrow">{t.step}</p>
           <h1>{language === "es" ? "Cargando..." : "Loading..."}</h1>
@@ -295,143 +512,92 @@ export default function RecordPage() {
   }
 
   return (
-    <main className="appShell recordPageClean">
-      <section className="recordHeroGrid">
-        <div className="recordHeroCard">
-          <p className="appEyebrow">{t.step}</p>
-          <h1>{t.title}</h1>
-          <p className="recordHeroText">{t.subtitle}</p>
+    <main className="appShell recordMockPage">
+      <section className="recordMockHero">
+        <p className="appEyebrow">{t.step}</p>
+        <h1>{t.title}</h1>
+        <p>{t.subtitle}</p>
 
-          <div className="recordPillRow">
-            <span className="recordInfoPill">
-              <span className="recordPillIcon">✓</span>
-              {t.consentSigned}
-            </span>
-
-            <span className="recordInfoPill">
-              <span className="recordPillIcon">🛡</span>
-              {t.vaultSecured}
-            </span>
-          </div>
-
-          <div className="recordActionRow">
-            <a href="#voice-recorder" className="appButton recordPrimaryCta">
-              {t.recordVoice}
-            </a>
-
-            <a href="#video-recorder" className="appButton secondary recordSecondaryCta">
-              {t.recordVideo}
-            </a>
-          </div>
+        <div className="recordMockPills">
+          <span>
+            <strong>🔒</strong>
+            {t.consentSigned}
+          </span>
+          <span>
+            <strong>🛡</strong>
+            {t.vaultSecured}
+          </span>
         </div>
+      </section>
 
-        <aside className="recordIdeasCard">
-          <p className="appEyebrow">{t.ideasEyebrow}</p>
-          <h2>{t.ideasTitle}</h2>
-          <p>{t.ideasText}</p>
+      <section className="recordMockPrepare">
+        <label>
+          <span>{t.who}</span>
+          <select
+            value={selectedLovedOneId}
+            onChange={(event) => setSelectedLovedOneId(event.target.value)}
+          >
+            {lovedOnes.map((profile) => {
+              const label = relationshipLabel(profile);
 
-          <div className="recordPromptGrid">
-            {t.prompts.map((prompt) => (
-              <span key={prompt} className="recordPromptChip">
-                {prompt}
-              </span>
+              return (
+                <option key={profile.id} value={profile.id}>
+                  {profile.full_name}{label ? ` — ${label}` : ""}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+
+        <label>
+          <span>{t.kind}</span>
+          <select
+            value={memoryType}
+            onChange={(event) => setMemoryType(event.target.value)}
+          >
+            {typeOptions.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
-          </div>
+          </select>
+        </label>
 
-          <div className="recordPrivacyBox">
-            <strong>{t.privateTitle}</strong>
-            <p>{t.privateText}</p>
-          </div>
-        </aside>
+        <label>
+          <span>{t.note}</span>
+          <textarea
+            rows={3}
+            value={memoryNote}
+            onChange={(event) => setMemoryNote(event.target.value)}
+            placeholder={t.notePlaceholder}
+          />
+        </label>
       </section>
 
-      <section className="recordPrepareGrid">
-        <div className="recordFormCard">
-          <div className="recordSectionHead">
-            <p className="appEyebrow">{t.prepareTitle}</p>
-            <h2>{t.prepareTitle}</h2>
-            <p>{t.prepareText}</p>
-          </div>
+      <section className="recordMockCards">
+        <article className="recordMockCard" id="voice-recorder">
+          <h2>{t.voiceMemory}</h2>
+          <div className="recordMockDivider" />
+          <h3>{t.voiceTitle}</h3>
+          <p>{t.voiceText}</p>
 
-          <div className="recordFieldStack">
-            <label className="recordField">
-              <span>{t.who}</span>
-              <select
-                className="recordSelect"
-                value={selectedLovedOneId}
-                onChange={(event) => setSelectedLovedOneId(event.target.value)}
-              >
-                {lovedOnes.map((profile) => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.full_name}
-                    {profile.relationship ? ` — ${profile.relationship}` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="recordField">
-              <span>{t.kind}</span>
-              <select
-                className="recordSelect"
-                value={memoryType}
-                onChange={(event) => setMemoryType(event.target.value)}
-              >
-                {typeOptions.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="recordField">
-              <span>{t.note}</span>
-              <textarea
-                className="recordTextarea"
-                rows={4}
-                value={memoryNote}
-                onChange={(event) => setMemoryNote(event.target.value)}
-                placeholder={t.notePlaceholder}
-              />
-            </label>
-          </div>
-        </div>
-
-        <aside className="recordWarmCard">
-          <div className="recordWarmBadge">VE</div>
-          <h2>{t.calmTitle}</h2>
-          <p>{t.calmText}</p>
-        </aside>
-      </section>
-
-      <section className="recordStudiosGrid">
-        <article id="voice-recorder" className="recordStudioCard">
-          <div className="recordSectionHead compact">
-            <p className="appEyebrow">{t.voiceCardTitle}</p>
-            <h2>{t.voiceCardTitle}</h2>
-            <p>{t.voiceCardText}</p>
-          </div>
-
-          <div className="recordRecorderWrap">
-            <AudioRecorder
-              language={language}
-              user={user}
-              lovedOneId={selectedLovedOneId}
-              memoryType={memoryType}
-              memoryNote={memoryNote}
-            />
-          </div>
+          <VoiceRecorderCard
+            t={t}
+            user={user}
+            lovedOneId={selectedLovedOneId}
+            memoryType={memoryType}
+            memoryNote={memoryNote}
+            language={language}
+          />
         </article>
 
-        <article id="video-recorder" className="recordStudioCard">
-          <div className="recordSectionHead compact">
-            <p className="appEyebrow">{t.videoCardTitle}</p>
-            <h2>{t.videoCardTitle}</h2>
-            <p>{t.videoCardText}</p>
-          </div>
+        <article className="recordMockCard" id="video-recorder">
+          <h2>{t.videoMemory}</h2>
+          <div className="recordMockDivider" />
+          <h3>{t.videoTitle}</h3>
+          <p>{t.videoText}</p>
 
-          <div className="recordRecorderWrap">
+          <div className="recordVideoWrap">
             <CameraRecorder
               language={language}
               user={user}
@@ -443,21 +609,18 @@ export default function RecordPage() {
         </article>
       </section>
 
-      <section className="recordNextCard">
-        <div className="recordSectionHead compact">
-          <h2>{t.nextTitle}</h2>
-        </div>
+      <section className="recordMockNext">
+        <h2>{t.nextTitle}</h2>
+        <div className="recordMockDivider" />
 
-        <ul className="recordNextList">
-          {t.nextSteps.map((item, index) => (
-            <li key={item}>
-              <span className="recordNextIcon">{index === 3 ? "✓" : "•"}</span>
-              <span>{item}</span>
+        <ul>
+          {t.nextSteps.map((step, index) => (
+            <li key={step}>
+              <span>{index === 3 ? "✓" : index === 0 ? "◉" : "🔒"}</span>
+              <strong>{step}</strong>
             </li>
           ))}
         </ul>
-
-        <p className="recordNextNote">{t.tagRule}</p>
       </section>
     </main>
   );
