@@ -1,42 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import AppLanguageToggle from "../../components/app/AppLanguageToggle";
-import { supabase } from "../../lib/supabaseClient";
 import { getStoredAppLanguage } from "../../lib/appLanguage";
+import { supabase } from "../../lib/supabaseClient";
 
 const copy = {
   en: {
-    back: "Back to website",
-    eyebrow: "VozEterna App MVP",
-    title: "Family Legacy Vault",
-    subtitle:
-      "Preserve voice memories, video messages, photos, prayers, stories, and family-approved memorial moments in one private legacy vault.",
-    createProfile: "Create profile",
-    recordMemory: "Record memory",
-    viewLibrary: "View library",
-    vaultStatus: "Vault Status",
-    progressTitle: "Vault Progress",
-    progressText: "A quick look at what is already set up and what to do next.",
-    consentDone: "Consent signed",
-    consentTodo: "Sign consent",
-    profilesDone: "Profiles created",
-    profilesTodo: "Create first profile",
-    memoriesDone: "Memories saved",
-    memoriesTodo: "Add first memory",
-    publicDone: "Public page enabled",
-    publicTodo: "Enable a public page",
-    voiceTodo: "Add a voice or video memory",
-    publicMemoryTodo: "Choose memories for public page",
-    statusSignedIn: "Your legacy system is taking shape",
-    statusSignedOut: "Sign in to begin",
-    statusTextSignedIn:
-      "Private vault, consent records, public memorial pages, QR sharing, and selected public memories are now connected.",
-    statusTextSignedOut:
-      "Create profiles, record memories, upload keepsakes, and prepare family-approved memorial pages.",
+    welcome: "Welcome to your",
+    title: "Family Legacy Dashboard",
+    description:
+      "Preserve and share legacy memories. Manage your vault status, privacy, and family-ready next steps from one calm dashboard.",
+    primaryAction: "Add next memory",
+    secondaryAction: "View library",
     signIn: "Sign in",
+    progressOverview: "Progress overview",
+    quickStats: "Quick stats",
+    vaultProgress: "Vault Progress",
+    vaultStatus: "Vault Status",
+    protectedVault: "Protected Vault",
+    privateDefault: "Private by default",
+    setupStatus: "Setup status",
+    storageUsed: "Storage used",
+    storageLimit: "of 50 MB",
+    complete: "Complete",
+    recommendedTitle: "Recommended next steps",
+    recommendedText:
+      "Focus on the actions that move the vault forward instead of repeating every menu item.",
+    upToDate: "Good",
+    upToDateTitle: "Up-to-date",
+    upToDateText: "Your vault is secure and ready for the next family memory.",
+    needsAttention: "Needs attention",
+    needsAttentionTitle: "Next step ready",
+    needsAttentionText: "Your vault is active. Finish the remaining setup items to prepare it for family use.",
     stats: {
       profilesLabel: "Profiles",
       profilesTitle: "Loved Ones",
@@ -53,82 +50,74 @@ const copy = {
       consentLabel: "Consent",
       consentTitle: "Signed Records",
       consentText: "Consent records stored with legal name and signature.",
+      privacyLabel: "Privacy",
+      privacyTitle: "Protected",
+      privacyText: "Private by default with family-controlled sharing.",
+      privacyValue: "Active",
     },
-    cards: [
+    checklist: {
+      consentDone: "Consent signed",
+      consentTodo: "Sign consent agreement",
+      profilesDone: "Profile created",
+      profilesTodo: "Create first profile",
+      vaultDone: "Vault secured",
+      vaultTodo: "Secure your vault",
+      publicDone: "Public page available",
+      publicTodo: "Prepare public page",
+      memoryDone: "One approved memory",
+      memoryTodo: "Add first memory",
+    },
+    nextSteps: [
       {
-        tag: "Start here",
-        title: "Consent & Agreements",
-        text: "Review the agreement before recording or enabling future AI voice features.",
-        href: "/app/consent",
-      },
-      {
-        tag: "Profiles",
-        title: "Loved One Profiles",
-        text: "Create legacy profiles with photos, bios, relationships, and memorial settings.",
-        href: "/app/loved-ones",
-        featured: true,
-      },
-      {
-        tag: "Capture",
-        title: "Record Voice & Video",
-        text: "Use your microphone or camera to preserve meaningful family memories.",
+        tag: "Next best action",
+        title: "Add a memory",
+        text: "Preserve a voice note, video, photo, prayer, or written family story.",
         href: "/app/record",
+        button: "Record memory",
       },
       {
-        tag: "Upload",
-        title: "Upload Memories",
-        text: "Add photos, audio, video, keepsakes, and notes to the private vault.",
-        href: "/app/upload",
+        tag: "Family legacy",
+        title: "Review public page",
+        text: "Choose what is private and what can appear on a family-approved memorial page.",
+        href: "/app/library",
+        button: "Review memories",
       },
       {
         tag: "Trust",
-        title: "Consent History",
-        text: "Review signed consent records and captured signatures from your account.",
-        href: "/app/consent-history",
-      },
-      {
-        tag: "Library",
-        title: "Memory Library",
-        text: "View, share, delete, and control which memories appear on memorial pages.",
-        href: "/app/library",
-      },
-      {
-        tag: "Albums",
-        title: "Memory Albums",
-        text: "Organize photos, voices, videos, and stories into curated family collections.",
-        href: "/app/collections",
+        title: "Confirm consent",
+        text: "Keep voice, AI, and memorial features grounded in clear authorization.",
+        href: "/app/consent",
+        button: "Review consent",
       },
     ],
   },
   es: {
-    back: "Volver al sitio web",
-    eyebrow: "MVP de VozEterna",
-    title: "Bóveda de Legado Familiar",
-    subtitle:
-      "Preserva recuerdos de voz, mensajes en video, fotos, oraciones, historias y momentos conmemorativos aprobados por la familia en una bóveda privada.",
-    createProfile: "Crear perfil",
-    recordMemory: "Grabar recuerdo",
-    viewLibrary: "Ver biblioteca",
-    vaultStatus: "Estado de la bóveda",
-    progressTitle: "Progreso de la bóveda",
-    progressText: "Un vistazo rápido a lo que ya está configurado y lo que sigue.",
-    consentDone: "Consentimiento firmado",
-    consentTodo: "Firmar consentimiento",
-    profilesDone: "Perfiles creados",
-    profilesTodo: "Crear primer perfil",
-    memoriesDone: "Recuerdos guardados",
-    memoriesTodo: "Agregar primer recuerdo",
-    publicDone: "Página pública activada",
-    publicTodo: "Activar una página pública",
-    voiceTodo: "Agregar recuerdo de voz o video",
-    publicMemoryTodo: "Elegir recuerdos para la página pública",
-    statusSignedIn: "Tu sistema de legado está tomando forma",
-    statusSignedOut: "Inicia sesión para comenzar",
-    statusTextSignedIn:
-      "La bóveda privada, los consentimientos, las páginas conmemorativas, los QR y los recuerdos públicos seleccionados ya están conectados.",
-    statusTextSignedOut:
-      "Crea perfiles, graba recuerdos, sube recuerdos familiares y prepara páginas conmemorativas aprobadas por la familia.",
+    welcome: "Bienvenido a tu",
+    title: "Panel de Legado Familiar",
+    description:
+      "Preserva y comparte recuerdos de legado. Administra el estado, privacidad y próximos pasos familiares desde un panel tranquilo.",
+    primaryAction: "Agregar recuerdo",
+    secondaryAction: "Ver biblioteca",
     signIn: "Iniciar sesión",
+    progressOverview: "Resumen de progreso",
+    quickStats: "Estadísticas rápidas",
+    vaultProgress: "Progreso de la bóveda",
+    vaultStatus: "Estado de la bóveda",
+    protectedVault: "Bóveda protegida",
+    privateDefault: "Privada por defecto",
+    setupStatus: "Estado de configuración",
+    storageUsed: "Almacenamiento usado",
+    storageLimit: "de 50 MB",
+    complete: "Completo",
+    recommendedTitle: "Siguientes pasos recomendados",
+    recommendedText:
+      "Enfócate en las acciones que hacen avanzar la bóveda sin repetir todo el menú.",
+    upToDate: "Bien",
+    upToDateTitle: "Al día",
+    upToDateText: "Tu bóveda está segura y lista para el siguiente recuerdo familiar.",
+    needsAttention: "Pendiente",
+    needsAttentionTitle: "Siguiente paso listo",
+    needsAttentionText: "Tu bóveda está activa. Completa los pasos restantes para prepararla para la familia.",
     stats: {
       profilesLabel: "Perfiles",
       profilesTitle: "Seres queridos",
@@ -145,54 +134,56 @@ const copy = {
       consentLabel: "Consentimiento",
       consentTitle: "Registros firmados",
       consentText: "Consentimientos guardados con nombre legal y firma.",
+      privacyLabel: "Privacidad",
+      privacyTitle: "Protegida",
+      privacyText: "Privada por defecto con control familiar.",
+      privacyValue: "Activa",
     },
-    cards: [
+    checklist: {
+      consentDone: "Consentimiento firmado",
+      consentTodo: "Firmar consentimiento",
+      profilesDone: "Perfil creado",
+      profilesTodo: "Crear primer perfil",
+      vaultDone: "Bóveda protegida",
+      vaultTodo: "Proteger tu bóveda",
+      publicDone: "Página pública disponible",
+      publicTodo: "Preparar página pública",
+      memoryDone: "Un recuerdo aprobado",
+      memoryTodo: "Agregar primer recuerdo",
+    },
+    nextSteps: [
       {
-        tag: "Comienza aquí",
-        title: "Consentimiento y acuerdos",
-        text: "Revisa el acuerdo antes de grabar o activar futuras funciones de voz con IA.",
-        href: "/app/consent",
-      },
-      {
-        tag: "Perfiles",
-        title: "Perfiles de seres queridos",
-        text: "Crea perfiles de legado con fotos, biografías, parentesco y ajustes memoriales.",
-        href: "/app/loved-ones",
-        featured: true,
-      },
-      {
-        tag: "Capturar",
-        title: "Grabar voz y video",
-        text: "Usa tu micrófono o cámara para preservar recuerdos familiares importantes.",
+        tag: "Mejor siguiente acción",
+        title: "Agrega un recuerdo",
+        text: "Preserva una nota de voz, video, foto, oración o historia familiar escrita.",
         href: "/app/record",
+        button: "Grabar recuerdo",
       },
       {
-        tag: "Subir",
-        title: "Subir recuerdos",
-        text: "Agrega fotos, audio, video, recuerdos especiales y notas a la bóveda privada.",
-        href: "/app/upload",
+        tag: "Legado familiar",
+        title: "Revisa la página pública",
+        text: "Elige qué será privado y qué puede aparecer en una página memorial aprobada.",
+        href: "/app/library",
+        button: "Revisar recuerdos",
       },
       {
         tag: "Confianza",
-        title: "Historial de consentimiento",
-        text: "Revisa consentimientos firmados y firmas capturadas desde tu cuenta.",
-        href: "/app/consent-history",
-      },
-      {
-        tag: "Biblioteca",
-        title: "Biblioteca de recuerdos",
-        text: "Ve, comparte, elimina y controla qué recuerdos aparecen en páginas memoriales.",
-        href: "/app/library",
-      },
-      {
-        tag: "Álbumes",
-        title: "Álbumes de recuerdos",
-        text: "Organiza fotos, voces, videos e historias en colecciones familiares curadas.",
-        href: "/app/collections",
+        title: "Confirma consentimiento",
+        text: "Mantén voz, IA y memoriales respaldados por autorización clara.",
+        href: "/app/consent",
+        button: "Revisar consentimiento",
       },
     ],
   },
 };
+
+function formatStorage(bytes) {
+  const safeBytes = Number(bytes) || 0;
+
+  if (safeBytes <= 0) return "0 KB";
+  if (safeBytes < 1024 * 1024) return `${(safeBytes / 1024).toFixed(1)} KB`;
+  return `${(safeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function AppHomePage() {
   const [language, setLanguage] = useState("en");
@@ -203,25 +194,11 @@ export default function AppHomePage() {
     publicMemorials: 0,
     consentRecords: 0,
     albums: 0,
+    storageBytes: 0,
   });
   const [loadingStats, setLoadingStats] = useState(true);
 
-  const t = copy[language];
-
-  function formatStorage(bytes) {
-    const safeBytes = Number(bytes) || 0;
-
-    if (safeBytes <= 0) {
-      return "0 KB";
-    }
-
-    if (safeBytes < 1024 * 1024) {
-      return `${(safeBytes / 1024).toFixed(1)} KB`;
-    }
-
-    return `${(safeBytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
+  const t = copy[language] || copy.en;
   const storageLimitBytes = 50 * 1024 * 1024;
   const storageBytes = Number(stats.storageBytes) || 0;
   const storagePercent = Math.min(
@@ -274,7 +251,7 @@ export default function AppHomePage() {
         supabase.from("media_assets").select("file_size"),
       ]);
 
-      const storageBytes = (storageResult.data || []).reduce((total, item) => {
+      const totalStorageBytes = (storageResult.data || []).reduce((total, item) => {
         return total + (Number(item.file_size) || 0);
       }, 0);
 
@@ -284,7 +261,7 @@ export default function AppHomePage() {
         publicMemorials: publicMemorialsResult.count || 0,
         consentRecords: consentResult.count || 0,
         albums: albumsResult.count || 0,
-        storageBytes,
+        storageBytes: totalStorageBytes,
       });
 
       setLoadingStats(false);
@@ -293,84 +270,201 @@ export default function AppHomePage() {
     loadDashboardStats();
   }, []);
 
-  const statLabel = loadingStats ? "—" : "";
+  const checklistItems = useMemo(
+    () => [
+      {
+        complete: stats.consentRecords > 0,
+        label: stats.consentRecords > 0 ? t.checklist.consentDone : t.checklist.consentTodo,
+      },
+      {
+        complete: stats.profiles > 0,
+        label: stats.profiles > 0 ? t.checklist.profilesDone : t.checklist.profilesTodo,
+      },
+      {
+        complete: true,
+        label: t.checklist.vaultDone,
+      },
+      {
+        complete: stats.publicMemorials > 0,
+        label: stats.publicMemorials > 0 ? t.checklist.publicDone : t.checklist.publicTodo,
+      },
+      {
+        complete: stats.memories > 0,
+        label: stats.memories > 0 ? t.checklist.memoryDone : t.checklist.memoryTodo,
+      },
+    ],
+    [stats, t]
+  );
+
+  const completedCount = checklistItems.filter((item) => item.complete).length;
+  const totalCount = checklistItems.length;
+  const setupPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const isGood = completedCount >= 4;
+
+  const primaryDashboardHref = !user
+    ? "/app/login"
+    : stats.profiles <= 0
+      ? "/app/loved-ones/new"
+      : stats.memories <= 0
+        ? "/app/record"
+        : stats.publicMemorials <= 0
+          ? "/app/library"
+          : "/app/record";
+
+  const primaryDashboardLabel = !user
+    ? t.signIn
+    : stats.profiles <= 0
+      ? language === "es" ? "Crear primer perfil" : "Create first profile"
+      : stats.memories <= 0
+        ? language === "es" ? "Agregar primer recuerdo" : "Add first memory"
+        : stats.publicMemorials <= 0
+          ? language === "es" ? "Revisar página pública" : "Review public page"
+          : t.primaryAction;
+
+  const metrics = [
+    {
+      label: t.stats.profilesLabel,
+      value: loadingStats ? "—" : stats.profiles,
+      title: t.stats.profilesTitle,
+      text: t.stats.profilesText,
+    },
+    {
+      label: t.stats.memoriesLabel,
+      value: loadingStats ? "—" : stats.memories,
+      title: t.stats.memoriesTitle,
+      text: t.stats.memoriesText,
+    },
+    {
+      label: t.stats.publicLabel,
+      value: loadingStats ? "—" : stats.publicMemorials,
+      title: t.stats.publicTitle,
+      text: t.stats.publicText,
+    },
+    {
+      label: t.stats.albumsLabel,
+      value: loadingStats ? "—" : stats.albums,
+      title: t.stats.albumsTitle,
+      text: t.stats.albumsText,
+    },
+    {
+      label: t.stats.consentLabel,
+      value: loadingStats ? "—" : stats.consentRecords,
+      title: t.stats.consentTitle,
+      text: t.stats.consentText,
+    },
+    {
+      label: t.stats.privacyLabel,
+      value: loadingStats ? "—" : t.stats.privacyValue,
+      title: t.stats.privacyTitle,
+      text: t.stats.privacyText,
+      className: "privacyMetricCard",
+    },
+  ];
 
   return (
-    <main className="appShell appDashboardShell">
-      <div className="dashboardGlow glowOne" />
-      <div className="dashboardGlow glowTwo" />
-
-      <section className="dashboardHero">
-        <div className="dashboardHeroText">
-          <Link href="/" className="textLink">
-            {t.back}
-          </Link>
-
-          <p className="appEyebrow">{t.eyebrow}</p>
-
+    <main className="appDashboardV3">
+      <section className="dashboardWelcomeRow">
+        <div>
+          <p>{t.welcome}</p>
           <h1>{t.title}</h1>
-
-          <p>{t.subtitle}</p>
+          <span>{t.description}</span>
 
           <div className="dashboardHeroActions">
-            <Link href="/app/loved-ones/new" className="appButton">
-              {t.createProfile}
+            <Link href={primaryDashboardHref} className="appButton">
+              {primaryDashboardLabel}
             </Link>
-
-            <Link href="/app/record" className="appButton secondary">
-              {t.recordMemory}
-            </Link>
-
-            <Link href="/app/library" className="appButton ghost">
-              {t.viewLibrary}
+            <Link href="/app/library" className="appButton secondary">
+              {t.secondaryAction}
             </Link>
           </div>
-<section className="dashboardStatsGrid liveStatsGrid dashboardHeroStats">
-        <article>
-          <span>{t.stats.profilesLabel}</span>
-          <strong>{loadingStats ? statLabel : stats.profiles}</strong>
-          <h2>{t.stats.profilesTitle}</h2>
-          <p>{t.stats.profilesText}</p>
-        </article>
-
-        <article>
-          <span>{t.stats.memoriesLabel}</span>
-          <strong>{loadingStats ? statLabel : stats.memories}</strong>
-          <h2>{t.stats.memoriesTitle}</h2>
-          <p>{t.stats.memoriesText}</p>
-        </article>
-
-        <article>
-          <span>{t.stats.albumsLabel}</span>
-          <strong>{loadingStats ? statLabel : stats.albums}</strong>
-          <h2>{t.stats.albumsTitle}</h2>
-          <p>{t.stats.albumsText}</p>
-        </article>
-
-        <article>
-          <span>{t.stats.publicLabel}</span>
-          <strong>{loadingStats ? statLabel : stats.publicMemorials}</strong>
-          <h2>{t.stats.publicTitle}</h2>
-          <p>{t.stats.publicText}</p>
-        </article>
-
-        <article>
-          <span>{t.stats.consentLabel}</span>
-          <strong>{loadingStats ? statLabel : stats.consentRecords}</strong>
-          <h2>{t.stats.consentTitle}</h2>
-          <p>{t.stats.consentText}</p>
-        </article>
-      </section>
         </div>
 
-        <div className="dashboardStatusCard">
+        <aside className={isGood ? "dashboardHealthCard good" : "dashboardHealthCard"}>
+          <div>
+            <span>{isGood ? "✓" : "!"}</span>
+            <strong>{isGood ? t.upToDate : t.needsAttention}</strong>
+          </div>
+          <h2>{isGood ? t.upToDateTitle : t.needsAttentionTitle}</h2>
+          <p>{isGood ? t.upToDateText : t.needsAttentionText}</p>
+        </aside>
+      </section>
+
+      <section className="dashboardMainGrid">
+        <div className="dashboardLeftStack">
+          <section className="progressOverviewCard">
+            <div className="dashboardSectionTitle">
+              <h2>{t.progressOverview}</h2>
+              <p>{completedCount}/{totalCount} {t.complete}</p>
+            </div>
+
+            <div className="progressOverviewBody">
+              <div className="progressBarBlock">
+                <div className="progressBarTrack">
+                  <span style={{ width: `${setupPercent}%` }} />
+                </div>
+
+                <div className="progressHighlights">
+                  <div>
+                    <span>✓</span>
+                    <strong>{stats.memories}</strong>
+                    <p>{language === "es" ? "recuerdos agregados" : "memories added"}</p>
+                  </div>
+
+                  <div>
+                    <span>◆</span>
+                    <strong>{t.protectedVault}</strong>
+                    <p>{storageDisplay} {language === "es" ? "usados" : "used"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="setupRing" style={{ "--setup-percent": `${setupPercent}%` }}>
+                <div>
+                  <strong>{setupPercent}%</strong>
+                  <span>{t.complete}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="quickStatsCard">
+            <div className="dashboardSectionTitle">
+              <h2>{t.quickStats}</h2>
+              <p>{language === "es" ? "Estado actual" : "Current status"}</p>
+            </div>
+
+            <div className="dashboardStatsGrid liveStatsGrid dashboardHeroStats">
+              {metrics.map((metric, index) => (
+                <article
+                  key={metric.label}
+                  className={metric.className || ""}
+                  data-metric-index={index + 1}
+                >
+                  <span>{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                  <h2>{metric.title}</h2>
+                  <p>{metric.text}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <aside className="dashboardStatusCard dashboardStatusCardV3">
           <AppLanguageToggle language={language} setLanguage={setLanguage} />
 
-                    <div className="statusShield" aria-label={language === "es" ? "Bóveda protegida" : "Protected Vault"}>
+          <div className="statusShield">
             <div className="statusShieldIcon" aria-hidden="true">
               <svg viewBox="0 0 24 24" className="statusShieldSvg" aria-hidden="true">
                 <defs>
-                  <linearGradient id="metalShieldGradient" x1="5" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                  <linearGradient
+                    id="metalShieldGradient"
+                    x1="5"
+                    y1="2"
+                    x2="20"
+                    y2="22"
+                    gradientUnits="userSpaceOnUse"
+                  >
                     <stop offset="0%" stopColor="#ffffff" />
                     <stop offset="18%" stopColor="#dfe8eb" />
                     <stop offset="42%" stopColor="#0e5b73" />
@@ -383,91 +477,78 @@ export default function AppHomePage() {
                     <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
                   </radialGradient>
                 </defs>
-                <path className="statusShieldMetal" d="M12 2 4 5.5V11c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5.5L12 2Z" />
-                <path className="statusShieldShine" d="M12 2 4 5.5V11c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5.5L12 2Z" />
+                <path
+                  className="statusShieldMetal"
+                  d="M12 2 4 5.5V11c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5.5L12 2Z"
+                />
+                <path
+                  className="statusShieldShine"
+                  d="M12 2 4 5.5V11c0 5.2 3.4 9.9 8 11 4.6-1.1 8-5.8 8-11V5.5L12 2Z"
+                />
                 <path className="statusShieldCheck" d="M9.5 12.2l1.8 1.8 3.7-4.2" />
               </svg>
             </div>
             <div className="statusShieldText">
-              <strong>{language === "es" ? "Bóveda protegida" : "Protected Vault"}</strong>
-              <span>{language === "es" ? "Privada por defecto" : "Private by default"}</span>
+              <strong>{t.protectedVault}</strong>
+              <span>{t.privateDefault}</span>
             </div>
           </div>
 
-          <div className="storageMeterCard">
-            <div
-              className="storageRing"
-              style={{ "--storage-percent": `${storagePercent}%` }}
-              aria-label={`${t.storageLabel}: ${storageDisplay} ${t.storageLimitLabel}`}
-            >
-              <div className="storageRingInner">
-                <strong>{storagePercent}%</strong>
-              </div>
-            </div>
+          <p className="appEyebrow">{t.vaultProgress}</p>
+          <h2>{t.vaultStatus}</h2>
 
-            <div className="storageMeterText">
-              <span>{t.storageLabel}</span>
-              <strong>{storageDisplay}</strong>
-              <p>{t.storageLimitLabel}</p>
-            </div>
+          <div className="vaultProgressList">
+            {checklistItems.map((item) => (
+              <div
+                key={item.label}
+                className={item.complete ? "vaultProgressItem complete" : "vaultProgressItem"}
+              >
+                <span>{item.complete ? "✓" : "→"}</span>
+                <strong>{item.label}</strong>
+              </div>
+            ))}
           </div>
 
-          <p className="appEyebrow">{t.vaultStatus}</p>
-          <h2>{user ? t.progressTitle : t.statusSignedOut}</h2>
-          <p>{user ? t.progressText : t.statusTextSignedOut}</p>
-
-          {user ? (
-            <div className="vaultProgressList">
-              <div className={stats.consentRecords > 0 ? "vaultProgressItem done" : "vaultProgressItem"}>
-                <span>{stats.consentRecords > 0 ? "✓" : "○"}</span>
-                <p>{stats.consentRecords > 0 ? t.consentDone : t.consentTodo}</p>
+          <div className="sideStorageBlock">
+            <div className="storageMeterCard">
+              <div
+                className="storageRing"
+                style={{ "--storage-percent": `${storagePercent}%` }}
+                aria-label={`${t.storageUsed}: ${storageDisplay} ${t.storageLimit}`}
+              >
+                <div className="storageRingInner">
+                  <strong>{storagePercent}%</strong>
+                </div>
               </div>
 
-              <div className={stats.profiles > 0 ? "vaultProgressItem done" : "vaultProgressItem"}>
-                <span>{stats.profiles > 0 ? "✓" : "○"}</span>
-                <p>{stats.profiles > 0 ? t.profilesDone : t.profilesTodo}</p>
-              </div>
-
-              <div className={stats.memories > 0 ? "vaultProgressItem done" : "vaultProgressItem"}>
-                <span>{stats.memories > 0 ? "✓" : "○"}</span>
-                <p>{stats.memories > 0 ? t.memoriesDone : t.memoriesTodo}</p>
-              </div>
-
-              <div className={stats.publicMemorials > 0 ? "vaultProgressItem done" : "vaultProgressItem"}>
-                <span>{stats.publicMemorials > 0 ? "✓" : "○"}</span>
-                <p>{stats.publicMemorials > 0 ? t.publicDone : t.publicTodo}</p>
-              </div>
-
-              <div className="vaultProgressItem next">
-                <span>→</span>
-                <p>{t.voiceTodo}</p>
-              </div>
-
-              <div className="vaultProgressItem next">
-                <span>→</span>
-                <p>{t.publicMemoryTodo}</p>
+              <div className="storageMeterText">
+                <span>{t.storageUsed}</span>
+                <strong>{storageDisplay}</strong>
+                <p>{t.storageLimit}</p>
               </div>
             </div>
-          ) : (
-            <Link href="/app/login" className="appButton">
-              {t.signIn}
-            </Link>
-          )}
-        </div>
+          </div>
+        </aside>
       </section>
 
-      <section className="dashboardActionGrid">
-        {t.cards.map((card) => (
-          <Link
-            key={card.href}
-            href={card.href}
-            className={card.featured ? "dashboardActionCard featured" : "dashboardActionCard"}
-          >
-            <span>{card.tag}</span>
-            <h2>{card.title}</h2>
-            <p>{card.text}</p>
-          </Link>
-        ))}
+      <section className="dashboardRecommendedSection">
+        <div className="dashboardRecommendedHeader">
+          <p className="appEyebrow">{language === "es" ? "Enfoque" : "Focus"}</p>
+          <h2>{t.recommendedTitle}</h2>
+          <p>{t.recommendedText}</p>
+        </div>
+
+        <div className="dashboardRecommendedGrid">
+          {t.nextSteps.map((step, index) => (
+            <Link href={user ? step.href : "/app/login"} className="recommendedStepCard" key={step.title}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <p>{step.tag}</p>
+              <h3>{step.title}</h3>
+              <small>{step.text}</small>
+              <strong>{user ? step.button : t.signIn}</strong>
+            </Link>
+          ))}
+        </div>
       </section>
     </main>
   );
