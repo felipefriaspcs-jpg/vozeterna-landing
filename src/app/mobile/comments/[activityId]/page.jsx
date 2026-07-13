@@ -18,62 +18,56 @@ export default function MobileCommentsPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (activityId) loadComments();
+    if (activityId) {
+      loadComments(activityId);
+    }
   }, [activityId]);
 
-  async function loadComments() {
+  async function loadComments(id) {
     setLoading(true);
     setMessage("");
 
-    const { data: activityData, error: activityError } = await supabase
-      .from("network_activity")
-      .select(
-        `
-        id,
-        network_id,
-        memory_id,
-        title,
-        created_at,
-        memories (
-          id,
-          title,
-          body,
-          type
-        )
-      `
-      )
-      .eq("id", activityId)
-      .maybeSingle();
+    try {
+      const { data: activityData, error: activityError } = await supabase
+        .from("network_activity")
+        .select("id, network_id, memory_id, title, created_at")
+        .eq("id", id)
+        .maybeSingle();
 
-    if (activityError) {
-      setMessage(activityError.message);
-      setActivity(null);
-      setComments([]);
+      if (activityError) {
+        setMessage(activityError.message);
+        setActivity(null);
+        setComments([]);
+        setLoading(false);
+        return;
+      }
+
+      if (!activityData) {
+        setMessage("Feed item not found.");
+        setActivity(null);
+        setComments([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: commentData, error: commentError } = await supabase
+        .from("network_comments")
+        .select("id, body, created_at, created_by")
+        .eq("activity_id", id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true });
+
+      if (commentError) {
+        setMessage(commentError.message);
+      }
+
+      setActivity(activityData);
+      setComments(commentData || []);
       setLoading(false);
-      return;
-    }
-
-    if (!activityData) {
-      setActivity(null);
-      setComments([]);
+    } catch (error) {
+      setMessage(error.message || "Could not load comments.");
       setLoading(false);
-      return;
     }
-
-    const { data: commentData, error: commentsError } = await supabase
-      .from("network_comments")
-      .select("id, body, created_at, created_by")
-      .eq("activity_id", activityId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true });
-
-    if (commentsError) {
-      setMessage(commentsError.message);
-    }
-
-    setActivity(activityData);
-    setComments(commentData || []);
-    setLoading(false);
   }
 
   async function sendComment(event) {
@@ -81,41 +75,49 @@ export default function MobileCommentsPage() {
 
     const cleanBody = body.trim();
 
-    if (!cleanBody || !activity) return;
+    if (!cleanBody) {
+      setMessage("Please write a comment before sending.");
+      return;
+    }
+
+    if (!activity?.id || sending) return;
 
     setSending(true);
     setMessage("");
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      setMessage("Please sign in before commenting.");
+      if (!user) {
+        setMessage("Please sign in before commenting.");
+        setSending(false);
+        return;
+      }
+
+      const { error } = await supabase.from("network_comments").insert({
+        network_id: activity.network_id,
+        activity_id: activity.id,
+        memory_id: activity.memory_id || null,
+        created_by: user.id,
+        body: cleanBody,
+      });
+
+      if (error) {
+        setMessage(error.message);
+        setSending(false);
+        return;
+      }
+
+      setBody("");
       setSending(false);
-      return;
+      loadComments(activity.id);
+    } catch (error) {
+      setMessage(error.message || "Could not send comment.");
+      setSending(false);
     }
-
-    const { error } = await supabase.from("network_comments").insert({
-      network_id: activity.network_id,
-      activity_id: activity.id,
-      memory_id: activity.memory_id || null,
-      created_by: user.id,
-      body: cleanBody,
-    });
-
-    setSending(false);
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    setBody("");
-    loadComments();
   }
-
-  const activityTitle = activity?.memories?.title || activity?.title || "Comments";
 
   return (
     <section className="mobileScreenStack">
@@ -139,7 +141,7 @@ export default function MobileCommentsPage() {
             <div className="mobileCommentSubject">
               <MessageCircle size={19} />
               <div>
-                <strong>{activityTitle}</strong>
+                <strong>{activity.title || "Memory comments"}</strong>
                 <span>{new Date(activity.created_at).toLocaleString()}</span>
               </div>
             </div>

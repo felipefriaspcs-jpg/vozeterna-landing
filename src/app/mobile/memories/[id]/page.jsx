@@ -3,8 +3,27 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Edit3, MessageCircle, ShieldCheck, Trash2, Volume2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit3,
+  FileText,
+  ImageOff,
+  MessageCircle,
+  ShieldCheck,
+  Trash2,
+  Volume2,
+} from "lucide-react";
 import { supabase } from "../../../../lib/supabaseClient";
+
+function MediaFallback() {
+  return (
+    <div className="mobileMediaFallback">
+      <ImageOff size={26} />
+      <strong>Media unavailable</strong>
+      <span>This file may be missing, private, or still processing.</span>
+    </div>
+  );
+}
 
 export default function MobileMemoryViewPage() {
   const params = useParams();
@@ -15,83 +34,111 @@ export default function MobileMemoryViewPage() {
   const [activity, setActivity] = useState(null);
   const [mediaUrl, setMediaUrl] = useState("");
   const [narrationUrl, setNarrationUrl] = useState("");
+  const [mediaFailed, setMediaFailed] = useState(false);
+  const [narrationFailed, setNarrationFailed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const [pageError, setPageError] = useState("");
 
   useEffect(() => {
-    if (memoryId) loadMemory(memoryId);
+    if (memoryId) {
+      loadMemory(memoryId);
+    }
   }, [memoryId]);
 
   async function loadMemory(id) {
     setLoading(true);
+    setPageError("");
+    setMediaUrl("");
+    setNarrationUrl("");
+    setMediaFailed(false);
+    setNarrationFailed(false);
 
-    const { data, error } = await supabase
-      .from("memories")
-      .select(
-        "id, title, body, type, media_path, feed_visibility, show_on_public_page, vault_id, network_id, narration_audio_path"
-      )
-      .eq("id", id)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("memories")
+        .select(
+          "id, title, body, type, media_path, feed_visibility, show_on_public_page, vault_id, network_id, narration_audio_path, created_at"
+        )
+        .eq("id", id)
+        .maybeSingle();
 
-    if (error) {
-      setMessage(error.message);
+      if (error) {
+        setPageError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
+        setMemory(null);
+        setPageError("Memory not found.");
+        setLoading(false);
+        return;
+      }
+
+      setMemory(data);
+
+      if (data.media_path) {
+        const { data: signed, error: signedError } = await supabase.storage
+          .from("family-media")
+          .createSignedUrl(data.media_path, 3600);
+
+        if (!signedError && signed?.signedUrl) {
+          setMediaUrl(signed.signedUrl);
+        }
+      }
+
+      if (data.narration_audio_path) {
+        const { data: signedNarration, error: narrationError } = await supabase.storage
+          .from("family-media")
+          .createSignedUrl(data.narration_audio_path, 3600);
+
+        if (!narrationError && signedNarration?.signedUrl) {
+          setNarrationUrl(signedNarration.signedUrl);
+        }
+      }
+
+      const { data: activityData } = await supabase
+        .from("network_activity")
+        .select("id, feed_visibility, is_commentable")
+        .eq("memory_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setActivity(activityData || null);
       setLoading(false);
-      return;
-    }
-
-    if (!data) {
-      setMemory(null);
+    } catch (error) {
+      setPageError(error.message || "This memory could not load.");
       setLoading(false);
-      return;
     }
-
-    if (data.media_path) {
-      const { data: signed } = await supabase.storage
-        .from("family-media")
-        .createSignedUrl(data.media_path, 3600);
-
-      setMediaUrl(signed?.signedUrl || "");
-    }
-
-    if (data.narration_audio_path) {
-      const { data: signedNarration } = await supabase.storage
-        .from("family-media")
-        .createSignedUrl(data.narration_audio_path, 3600);
-
-      setNarrationUrl(signedNarration?.signedUrl || "");
-    }
-
-    const { data: activityData } = await supabase
-      .from("network_activity")
-      .select("id, is_commentable, feed_visibility")
-      .eq("memory_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    setActivity(activityData || null);
-    setMemory(data);
-    setLoading(false);
   }
 
   async function deleteMemory() {
-    if (!memory) return;
+    if (!memory?.id) return;
 
     const confirmed = window.confirm("Delete this memory? This cannot be undone.");
     if (!confirmed) return;
 
-    if (memory.media_path) {
-      await supabase.storage.from("family-media").remove([memory.media_path]);
+    try {
+      if (memory.media_path) {
+        await supabase.storage.from("family-media").remove([memory.media_path]);
+      }
+
+      if (memory.narration_audio_path) {
+        await supabase.storage.from("family-media").remove([memory.narration_audio_path]);
+      }
+
+      const { error } = await supabase.from("memories").delete().eq("id", memory.id);
+
+      if (error) {
+        setPageError(error.message);
+        return;
+      }
+
+      router.push("/mobile/library");
+    } catch (error) {
+      setPageError(error.message || "Could not delete memory.");
     }
-
-    const { error } = await supabase.from("memories").delete().eq("id", memory.id);
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    router.push("/mobile/library");
   }
 
   if (loading) {
@@ -110,9 +157,11 @@ export default function MobileMemoryViewPage() {
       <section className="mobileScreenStack">
         <div className="mobileScreenHero">
           <p className="mobileCapsLabel">Memory</p>
-          <h1>Memory not found.</h1>
-          {message && <p>{message}</p>}
+          <h1>Memory not found</h1>
+          {pageError && <p>{pageError}</p>}
+
           <Link href="/mobile/library" className="mobilePrimaryButton">
+            <ArrowLeft size={17} />
             Back to library
           </Link>
         </div>
@@ -120,11 +169,13 @@ export default function MobileMemoryViewPage() {
     );
   }
 
+  const type = memory.type || "document";
+
   return (
     <section className="mobileScreenStack">
       <div className="mobileScreenHero">
         <p className="mobileCapsLabel">Memory</p>
-        <h1>{memory.title || "Memory"}</h1>
+        <h1>{memory.title || "Untitled memory"}</h1>
 
         <div className="mobileSecurityPills">
           <span>{memory.feed_visibility === "network" ? "Network feed" : "Private"}</span>
@@ -133,17 +184,35 @@ export default function MobileMemoryViewPage() {
       </div>
 
       <section className="mobileMemoryDetailCard">
-        {memory.type === "photo" && mediaUrl && (
-          <img src={mediaUrl} alt={memory.title || "Memory"} className="mobileMemoryDetailMedia" />
+        {type === "photo" && mediaUrl && !mediaFailed && (
+          <img
+            src={mediaUrl}
+            alt={memory.title || "Memory"}
+            className="mobileMemoryDetailMedia"
+            onError={() => setMediaFailed(true)}
+          />
         )}
 
-        {memory.type === "video" && mediaUrl && (
-          <video src={mediaUrl} controls playsInline className="mobileMemoryDetailMedia" />
+        {type === "video" && mediaUrl && !mediaFailed && (
+          <video
+            src={mediaUrl}
+            controls
+            playsInline
+            className="mobileMemoryDetailMedia"
+            onError={() => setMediaFailed(true)}
+          />
         )}
 
-        {memory.type === "audio" && mediaUrl && (
-          <audio src={mediaUrl} controls className="mobileMemoryDetailAudio" />
+        {type === "audio" && mediaUrl && !mediaFailed && (
+          <audio
+            src={mediaUrl}
+            controls
+            className="mobileMemoryDetailAudio"
+            onError={() => setMediaFailed(true)}
+          />
         )}
+
+        {(!mediaUrl || mediaFailed) && <MediaFallback />}
 
         <p>{memory.body || "No description yet."}</p>
 
@@ -153,8 +222,13 @@ export default function MobileMemoryViewPage() {
             AI voice narration
           </p>
 
-          {narrationUrl ? (
-            <audio src={narrationUrl} controls className="mobileMemoryDetailAudio" />
+          {narrationUrl && !narrationFailed ? (
+            <audio
+              src={narrationUrl}
+              controls
+              className="mobileMemoryDetailAudio"
+              onError={() => setNarrationFailed(true)}
+            />
           ) : (
             <p className="mobileFormHelper">No narration generated yet.</p>
           )}
@@ -166,7 +240,10 @@ export default function MobileMemoryViewPage() {
             Edit
           </Link>
 
-          <Link href={`/mobile/security?vaultId=${memory.vault_id}&memoryId=${memory.id}`} className="familyFeedCommentButton">
+          <Link
+            href={`/mobile/security?vaultId=${memory.vault_id || ""}&memoryId=${memory.id}`}
+            className="familyFeedCommentButton"
+          >
             <ShieldCheck size={16} />
             Security
           </Link>
@@ -184,7 +261,7 @@ export default function MobileMemoryViewPage() {
           </button>
         </div>
 
-        {message && <p className="mobileFormMessage">{message}</p>}
+        {pageError && <p className="mobileFormMessage">{pageError}</p>}
       </section>
     </section>
   );

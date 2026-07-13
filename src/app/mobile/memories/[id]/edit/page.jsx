@@ -20,42 +20,51 @@ export default function MobileMemoryEditPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (memoryId) loadMemory(memoryId);
+    if (memoryId) {
+      loadMemory(memoryId);
+    }
   }, [memoryId]);
 
   async function loadMemory(id) {
     setLoading(true);
+    setMessage("");
 
-    const { data, error } = await supabase
-      .from("memories")
-      .select("id, title, body, feed_visibility, show_on_public_page, vault_id, network_id")
-      .eq("id", id)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("memories")
+        .select("id, title, body, feed_visibility, show_on_public_page, vault_id, network_id")
+        .eq("id", id)
+        .maybeSingle();
 
-    if (error) {
-      setMessage(error.message);
+      if (error) {
+        setMessage(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
+        setMemory(null);
+        setMessage("Memory not found.");
+        setLoading(false);
+        return;
+      }
+
+      setMemory(data);
+      setTitle(data.title || "");
+      setBody(data.body || "");
+      setFeedVisibility(data.feed_visibility || "private");
+      setShowOnPublicPage(Boolean(data.show_on_public_page));
       setLoading(false);
-      return;
-    }
-
-    if (!data) {
-      setMemory(null);
+    } catch (error) {
+      setMessage(error.message || "Could not load memory.");
       setLoading(false);
-      return;
     }
-
-    setMemory(data);
-    setTitle(data.title || "");
-    setBody(data.body || "");
-    setFeedVisibility(data.feed_visibility || "private");
-    setShowOnPublicPage(Boolean(data.show_on_public_page));
-    setLoading(false);
   }
 
   async function saveMemory(event) {
     event.preventDefault();
 
-    if (!memory) return;
+    if (!memory?.id || saving) return;
 
     setSaving(true);
     setMessage("");
@@ -64,39 +73,39 @@ export default function MobileMemoryEditPage() {
     const cleanBody = body.trim() || null;
     const visibility = feedVisibility === "network" ? "network" : "private";
 
-    const memoryUpdate = await supabase
-      .from("memories")
-      .update({
-        title: cleanTitle,
-        body: cleanBody,
-        feed_visibility: visibility,
-        show_on_public_page: showOnPublicPage,
-      })
-      .eq("id", memory.id);
+    try {
+      const { error: memoryError } = await supabase
+        .from("memories")
+        .update({
+          title: cleanTitle,
+          body: cleanBody,
+          feed_visibility: visibility,
+          show_on_public_page: showOnPublicPage,
+        })
+        .eq("id", memory.id);
 
-    if (memoryUpdate.error) {
+      if (memoryError) {
+        setMessage(memoryError.message);
+        setSaving(false);
+        return;
+      }
+
+      await supabase
+        .from("network_activity")
+        .update({
+          title: cleanTitle,
+          feed_visibility: visibility,
+          is_commentable: visibility === "network",
+        })
+        .eq("memory_id", memory.id);
+
+      setMessage("Saved.");
       setSaving(false);
-      setMessage(memoryUpdate.error.message);
-      return;
-    }
-
-    const activityUpdate = await supabase
-      .from("network_activity")
-      .update({
-        title: cleanTitle,
-        feed_visibility: visibility,
-        is_commentable: visibility === "network",
-      })
-      .eq("memory_id", memory.id);
-
-    if (activityUpdate.error) {
+      router.push(`/mobile/memories/${memory.id}`);
+    } catch (error) {
+      setMessage(error.message || "Could not save memory.");
       setSaving(false);
-      setMessage(activityUpdate.error.message);
-      return;
     }
-
-    setSaving(false);
-    setMessage("Saved.");
   }
 
   if (loading) {
@@ -115,7 +124,7 @@ export default function MobileMemoryEditPage() {
       <section className="mobileScreenStack">
         <div className="mobileScreenHero">
           <p className="mobileCapsLabel">Edit</p>
-          <h1>Memory not found.</h1>
+          <h1>Memory not found</h1>
           {message && <p>{message}</p>}
         </div>
       </section>
