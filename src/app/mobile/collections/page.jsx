@@ -21,17 +21,17 @@ const copy = {
     noDescription: "Private memory collection",
   },
   es: {
-    label: "Álbumes",
-    title: "Álbumes de recuerdos",
+    label: "Ãlbumes",
+    title: "Ãlbumes de recuerdos",
     subtitle: "Organiza recuerdos en colecciones privadas para tu familia.",
-    loading: "Cargando álbumes...",
-    emptyTitle: "Todavía no hay álbumes",
-    emptyText: "Crea un álbum para organizar recuerdos por persona, evento, bendición, historia o temporada.",
-    create: "Crear álbum",
-    open: "Abrir álbum",
+    loading: "Cargando albumes...",
+    emptyTitle: "Todavia no hay albumes",
+    emptyText: "Crea un album para organizar recuerdos por persona, evento, bendicion, historia o temporada.",
+    create: "Crear album",
+    open: "Abrir album",
     private: "Privado",
-    public: "Público",
-    noDescription: "Colección privada de recuerdos",
+    public: "Publico",
+    noDescription: "Coleccion privada de recuerdos",
   },
 };
 
@@ -138,7 +138,7 @@ export default function MobileCollectionsPage() {
 
               <div className="mobileAlbumListFooter">
                 <span>{t.open}</span>
-                <span>→</span>
+                <span>â†’</span>
               </div>
             </article>
           </Link>

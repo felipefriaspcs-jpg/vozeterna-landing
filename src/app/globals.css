@@ -18869,3 +18869,73 @@ select.appInput {
   background: #10313d !important;
   color: #ffffff !important;
 }
+
+/* ===== Premium Memory Frames v1 ===== */
+
+.mobileAlbumMemoryCard {
+  position: relative;
+}
+
+.mobileAlbumMemoryCard .mobileMemoryPreviewImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 10px !important;
+  border: 10px solid rgba(172, 123, 63, 0.72) !important;
+  outline: 2px solid rgba(255, 224, 170, 0.28);
+  box-shadow:
+    inset 0 0 0 2px rgba(90, 52, 20, 0.55),
+    0 18px 38px rgba(0, 0, 0, 0.28);
+  background: #2b1a10;
+}
+
+.mobileAlbumMemoryCard .mobileMemoryPreviewImage::after {
+  content: "";
+}
+
+.mobileAlbumMemoryCard:has(.mobileMemoryPreviewImage) {
+  background:
+    linear-gradient(135deg, rgba(25, 50, 58, 0.98), rgba(7, 27, 38, 0.98)) !important;
+  border: 1px solid rgba(190, 150, 90, 0.22) !important;
+}
+
+.mobileAlbumMemoryCard:has(.mobileMemoryPreviewImage)::before {
+  content: "Premium frame";
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 2;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(70, 38, 14, 0.72);
+  border: 1px solid rgba(255, 218, 150, 0.35);
+  color: #ffe0a0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.mobileAlbumMemoryCardTitle {
+  margin-top: 14px !important;
+  color: #ffffff !important;
+}
+
+.mobileAlbumMemoryCardMeta {
+  color: rgba(238, 245, 247, 0.68) !important;
+}
+
+.mobileAlbumFrameNote {
+  color: rgba(255, 224, 170, 0.72);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+/* Future frame tiers:
+   basic-frame: clean rounded image
+   classic-frame: warm wooden frame
+   premium-frame: ornate/gold family portrait frame
+   memorial-frame: elegant black/gold remembrance frame
+*/

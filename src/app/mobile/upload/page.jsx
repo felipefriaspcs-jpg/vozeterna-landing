@@ -25,19 +25,19 @@ const copy = {
     privateNote: "Files are private by default and saved inside the selected profile.",
   },
   es: {
-    label: "Subida mÃƒÆ’Ã‚Â³vil",
+    label: "Subida mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÂ³vil",
     title: "Sube un recuerdo",
-    subtitle: "Elige una foto, audio, video o documento desde tu telÃƒÆ’Ã‚Â©fono sin salir de la app mÃƒÆ’Ã‚Â³vil.",
+    subtitle: "Elige una foto, audio, video o documento desde tu telÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÂ©fono sin salir de la app mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÂ³vil.",
     choose: "Elegir archivo",
     selected: "Archivo seleccionado",
     profile: "Conectar a perfil",
-    profileFallback: "BÃƒÆ’Ã‚Â³veda familiar predeterminada",
+    profileFallback: "BÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÂ³veda familiar predeterminada",
     note: "Nota del recuerdo",
     placeholder: "Escribe una nota corta sobre este recuerdo...",
     upload: "Subir recuerdo",
     uploading: "Subiendo...",
     saved: "Recuerdo subido.",
-    signIn: "Inicia sesiÃƒÆ’Ã‚Â³n antes de subir.",
+    signIn: "Inicia sesiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÂ³n antes de subir.",
     noFile: "Primero elige un archivo.",
     privateNote: "Los archivos son privados por defecto y se guardan dentro del perfil seleccionado.",
   },
@@ -55,6 +55,21 @@ export default function MobileUploadPage() {
   const inputRef = useRef(null);
 
   const t = copy[language] || copy.en;
+
+  function cleanDisplayText(value = "") {
+    return String(value || "")
+      .replaceAll("Ã¡", "a")
+      .replaceAll("Ã©", "e")
+      .replaceAll("Ã­", "i")
+      .replaceAll("Ã³", "o")
+      .replaceAll("Ãº", "u")
+      .replaceAll("Ã±", "n")
+      .replaceAll("Â·", "-")
+      .replaceAll("Â", "")
+      .replaceAll("�", "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
   useEffect(() => {
     setLanguage(getInitialMobileLanguage());
@@ -160,7 +175,7 @@ export default function MobileUploadPage() {
             <option value="">{t.profileFallback}</option>
             {vaults.map((vault) => (
               <option value={vault.id} key={vault.id}>
-                {(vault.subject_name || vault.title) + " Ãƒâ€šÃ‚Â· " + (vault.relationship_label || "Vault")}
+                {(vault.subject_name || vault.title) + " ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€š- " + (vault.relationship_label || "Vault")}
               </option>
             ))}
           </select>
