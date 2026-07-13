@@ -16,35 +16,35 @@ import MobileMemoryActions from "../mobile/MobileMemoryActions";
 
 const copy = {
   en: {
-    label: "Family Feed",
-    loadingTitle: "Loading updates...",
-    title: "Recent family activity",
-    subtitle: "Private updates from vaults you belong to.",
-    unavailableTitle: "Feed unavailable",
-    unavailableText: "We could not load the family feed yet.",
-    tryAgain: "Try again",
-    emptyTitle: "Your family is waiting for your story.",
-    emptyText:
-      "This private feed will come alive when you or invited family members add the first memory, photo, voice note, or reflection.",
-    recordFirst: "Record the first memory",
+    family: "Family Feed",
+    friend: "Friend Feed",
+    titleFamily: "Family activity",
+    titleFriend: "Friend activity",
+    subtitleFamily: "Private updates from your family network.",
+    subtitleFriend: "Private updates from your friend network.",
+    loading: "Loading feed...",
+    emptyFamily: "No family feed activity yet.",
+    emptyFriend: "No friend feed activity yet.",
+    recordFirst: "Record first memory",
+    comments: "Comments",
+    noDescription: "No description yet.",
     justNow: "Just now",
     agoMinute: "m ago",
     agoHour: "h ago",
     agoDay: "d ago",
-    noDescription: "No description yet.",
-    comments: "Comments",
     labels: {
       reflection_added: "New reflection",
       voice_added: "Voice memory",
       video_added: "Video memory",
       photo_added: "Photo memory",
       profile_added: "Profile update",
-      memory_added: "Family update",
-      default: "Family update",
+      memory_added: "Memory update",
+      default: "Network update",
     },
     actions: {
       view: "View",
       edit: "Edit",
+      security: "Security",
       delete: "Delete",
       share: "Share",
       copied: "Copied",
@@ -54,35 +54,35 @@ const copy = {
     },
   },
   es: {
-    label: "Red familiar",
-    loadingTitle: "Cargando actualizaciones...",
-    title: "Actividad familiar reciente",
-    subtitle: "Actualizaciones privadas de las bóvedas a las que perteneces.",
-    unavailableTitle: "Feed no disponible",
-    unavailableText: "Todavía no pudimos cargar la actividad familiar.",
-    tryAgain: "Intentar de nuevo",
-    emptyTitle: "Tu familia está esperando tu historia.",
-    emptyText:
-      "Este feed privado cobrará vida cuando tú o tus familiares invitados agreguen el primer recuerdo, foto, nota de voz o reflexión.",
-    recordFirst: "Grabar el primer recuerdo",
+    family: "Feed familiar",
+    friend: "Feed de amigos",
+    titleFamily: "Actividad familiar",
+    titleFriend: "Actividad de amigos",
+    subtitleFamily: "Actualizaciones privadas de tu red familiar.",
+    subtitleFriend: "Actualizaciones privadas de tu red de amigos.",
+    loading: "Cargando feed...",
+    emptyFamily: "Todavía no hay actividad familiar.",
+    emptyFriend: "Todavía no hay actividad de amigos.",
+    recordFirst: "Grabar primer recuerdo",
+    comments: "Comentarios",
+    noDescription: "Sin descripción todavía.",
     justNow: "Ahora mismo",
     agoMinute: "min",
     agoHour: "h",
     agoDay: "d",
-    noDescription: "Sin descripción todavía.",
-    comments: "Comentarios",
     labels: {
       reflection_added: "Nueva reflexión",
       voice_added: "Recuerdo de voz",
       video_added: "Recuerdo en video",
       photo_added: "Recuerdo con foto",
       profile_added: "Actualización de perfil",
-      memory_added: "Actualización familiar",
-      default: "Actualización familiar",
+      memory_added: "Actualización de recuerdo",
+      default: "Actualización de red",
     },
     actions: {
       view: "Ver",
       edit: "Editar",
+      security: "Seguridad",
       delete: "Eliminar",
       share: "Compartir",
       copied: "Copiado",
@@ -99,7 +99,6 @@ function getActivityIcon(type) {
   if (type === "video_added") return Video;
   if (type === "photo_added") return ImageIcon;
   if (type === "profile_added") return UserRound;
-
   return UploadCloud;
 }
 
@@ -133,7 +132,7 @@ function formatActivityDate(dateString, t, language) {
   return date.toLocaleDateString("en-US");
 }
 
-export default function FamilyActivityFeed({ limit = 20 }) {
+export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) {
   const [language, setLanguage] = useState("en");
   const [activities, setActivities] = useState([]);
   const [signedUrls, setSignedUrls] = useState({});
@@ -141,6 +140,7 @@ export default function FamilyActivityFeed({ limit = 20 }) {
   const [feedError, setFeedError] = useState("");
 
   const t = copy[language] || copy.en;
+  const resolvedType = feedType === "friend" ? "friend" : "family";
 
   useEffect(() => {
     setLanguage(getInitialMobileLanguage());
@@ -152,19 +152,38 @@ export default function FamilyActivityFeed({ limit = 20 }) {
     }
 
     window.addEventListener("vozeterna-language-change", handleLanguageChange);
-
-    return () => {
-      window.removeEventListener("vozeterna-language-change", handleLanguageChange);
-    };
+    return () => window.removeEventListener("vozeterna-language-change", handleLanguageChange);
   }, []);
 
   useEffect(() => {
     loadActivity();
-  }, []);
+  }, [resolvedType]);
 
   async function loadActivity() {
     setLoading(true);
     setFeedError("");
+
+    const { data: networks, error: networkError } = await supabase
+      .from("networks")
+      .select("id, type, name")
+      .eq("type", resolvedType)
+      .eq("is_archived", false);
+
+    if (networkError) {
+      setFeedError(networkError.message);
+      setActivities([]);
+      setLoading(false);
+      return;
+    }
+
+    const networkIds = (networks || []).map((network) => network.id);
+
+    if (networkIds.length === 0) {
+      setActivities([]);
+      setSignedUrls({});
+      setLoading(false);
+      return;
+    }
 
     const { data, error } = await supabase
       .from("network_activity")
@@ -186,6 +205,9 @@ export default function FamilyActivityFeed({ limit = 20 }) {
           media_path,
           media_mime_type,
           feed_visibility,
+          show_on_public_page,
+          vault_id,
+          network_id,
           created_at
         ),
         vaults (
@@ -195,13 +217,13 @@ export default function FamilyActivityFeed({ limit = 20 }) {
           relationship_label
         )
       `)
+      .in("network_id", networkIds)
       .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) {
-      console.error("Family feed error:", error.message);
+      setFeedError(error.message);
       setActivities([]);
-      setFeedError(t.unavailableText);
       setLoading(false);
       return;
     }
@@ -224,8 +246,8 @@ export default function FamilyActivityFeed({ limit = 20 }) {
       })
     );
 
-    setSignedUrls(urls);
     setActivities(rows);
+    setSignedUrls(urls);
     setLoading(false);
   }
 
@@ -233,31 +255,24 @@ export default function FamilyActivityFeed({ limit = 20 }) {
     setActivities((current) => current.filter((activity) => activity.memory_id !== memoryId));
   }
 
-  if (loading) {
-    return (
-      <section className="familyFeedPanel">
-        <div className="familyFeedHeader">
-          <p>{t.label}</p>
-          <h2>{t.loadingTitle}</h2>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="familyFeedPanel">
       <div className="familyFeedHeader">
-        <p>{t.label}</p>
-        <h2>{t.title}</h2>
-        <span>{t.subtitle}</span>
+        <p>{resolvedType === "family" ? t.family : t.friend}</p>
+        <h2>{resolvedType === "family" ? t.titleFamily : t.titleFriend}</h2>
+        <span>{resolvedType === "family" ? t.subtitleFamily : t.subtitleFriend}</span>
       </div>
 
-      {feedError ? (
+      {loading ? (
         <div className="familyFeedEmpty">
-          <strong>{t.unavailableTitle}</strong>
+          <p>{t.loading}</p>
+        </div>
+      ) : feedError ? (
+        <div className="familyFeedEmpty">
+          <strong>Feed error</strong>
           <p>{feedError}</p>
           <button type="button" onClick={loadActivity} className="familyFeedRetry">
-            {t.tryAgain}
+            Retry
           </button>
         </div>
       ) : activities.length === 0 ? (
@@ -265,9 +280,7 @@ export default function FamilyActivityFeed({ limit = 20 }) {
           <span className="familyFeedEmptyIcon">
             <Mic2 size={22} strokeWidth={2.35} />
           </span>
-
-          <strong>{t.emptyTitle}</strong>
-          <p>{t.emptyText}</p>
+          <strong>{resolvedType === "family" ? t.emptyFamily : t.emptyFriend}</strong>
           <Link href="/mobile/record">{t.recordFirst}</Link>
         </div>
       ) : (

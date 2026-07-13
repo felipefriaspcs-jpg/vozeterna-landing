@@ -1,22 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Check,
-  Copy,
   Edit3,
+  Eye,
   MessageCircle,
   MoreVertical,
   Share2,
+  ShieldCheck,
   Trash2,
-  Eye,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
 const defaultLabels = {
   view: "View",
   edit: "Edit",
+  security: "Security",
   delete: "Delete",
   share: "Share",
   copied: "Copied",
@@ -32,6 +33,7 @@ export default function MobileMemoryActions({
   onDeleted,
   labels = defaultLabels,
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
   const menuRef = useRef(null);
@@ -58,8 +60,16 @@ export default function MobileMemoryActions({
 
   const memoryHref = `/mobile/memories/${memory.id}`;
   const editHref = `/mobile/memories/${memory.id}/edit`;
+  const securityHref = memory.vault_id
+    ? `/mobile/security?vaultId=${memory.vault_id}&memoryId=${memory.id}`
+    : `/mobile/security?memoryId=${memory.id}`;
   const resolvedCommentsHref =
     commentsHref || (activityId ? `/mobile/comments/${activityId}` : "");
+
+  function goTo(path) {
+    setOpen(false);
+    router.push(path);
+  }
 
   async function shareMemory() {
     const url =
@@ -67,15 +77,14 @@ export default function MobileMemoryActions({
         ? `${window.location.origin}${memoryHref}`
         : "https://vozeterna-landing.vercel.app/mobile";
 
-    const shareData = {
-      title: memory.title || "VozEterna memory",
-      text: memory.body || "A private VozEterna memory.",
-      url,
-    };
-
     try {
       if (navigator.share) {
-        await navigator.share(shareData);
+        await navigator.share({
+          title: memory.title || "VozEterna memory",
+          text: memory.body || "A private VozEterna memory.",
+          url,
+        });
+
         setOpen(false);
         return;
       }
@@ -83,16 +92,8 @@ export default function MobileMemoryActions({
       await navigator.clipboard.writeText(url);
       setShareStatus("copied");
       window.setTimeout(() => setShareStatus(""), 1600);
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-
-      try {
-        await navigator.clipboard.writeText(url);
-        setShareStatus("copied");
-        window.setTimeout(() => setShareStatus(""), 1600);
-      } catch {
-        // no-op
-      }
+    } catch {
+      // no-op
     }
   }
 
@@ -134,21 +135,26 @@ export default function MobileMemoryActions({
 
       {open && (
         <div className="mobileMemoryMenu">
-          <Link href={memoryHref} onClick={() => setOpen(false)}>
+          <button type="button" onClick={() => goTo(memoryHref)}>
             <Eye size={15} />
             {t.view}
-          </Link>
+          </button>
 
-          <Link href={editHref} onClick={() => setOpen(false)}>
+          <button type="button" onClick={() => goTo(editHref)}>
             <Edit3 size={15} />
             {t.edit}
-          </Link>
+          </button>
+
+          <button type="button" onClick={() => goTo(securityHref)}>
+            <ShieldCheck size={15} />
+            {t.security}
+          </button>
 
           {resolvedCommentsHref && (
-            <Link href={resolvedCommentsHref} onClick={() => setOpen(false)}>
+            <button type="button" onClick={() => goTo(resolvedCommentsHref)}>
               <MessageCircle size={15} />
               {t.comments}
-            </Link>
+            </button>
           )}
 
           <button type="button" onClick={shareMemory}>
