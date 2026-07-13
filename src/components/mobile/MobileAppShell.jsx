@@ -280,6 +280,10 @@ export default function MobileAppShell({ children }) {
                 );
               })}
             </nav>
+          <AuthMenuControls
+            language={language}
+            onNavigate={() => setMenuOpen(false)}
+          />
           </aside>
         </div>
       )}

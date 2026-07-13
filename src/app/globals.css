@@ -17880,3 +17880,72 @@ select.appInput {
   font-size: 0.86rem;
   font-weight: 850;
 }
+/* Mobile menu auth controls */
+.mobileMenuAuthControls {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mobile-faint);
+}
+
+.mobileMenuAuthPrimary,
+.mobileMenuAuthSecondary,
+.mobileMenuLogoutButton {
+  min-height: 46px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 13px;
+  border-radius: 16px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.mobileMenuAuthPrimary {
+  border: 0;
+  color: #fffaf2;
+  background: linear-gradient(145deg, var(--mobile-teal), var(--mobile-deep));
+}
+
+.mobileMenuAuthSecondary {
+  color: var(--mobile-text);
+  background: var(--mobile-bg-soft);
+  border: 1px solid var(--mobile-faint);
+}
+
+.mobileMenuLogoutButton {
+  color: #ffe3dc;
+  background: rgba(150, 48, 48, 0.18);
+  border: 1px solid rgba(255, 142, 120, 0.26);
+}
+
+.mobileMenuSignedInCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 18px;
+  color: var(--mobile-text);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(216, 170, 99, 0.12), transparent 34%),
+    var(--mobile-bg-soft);
+  border: 1px solid var(--mobile-faint);
+}
+
+.mobileMenuSignedInCard span {
+  display: block;
+  color: var(--mobile-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.mobileMenuSignedInCard strong {
+  display: block;
+  color: var(--mobile-text);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
