@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { QrCode } from "lucide-react";
 import FamilyActivityFeed from "../../../components/social/FamilyActivityFeed";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
 
@@ -11,6 +13,7 @@ const copy = {
     subtitle: "Switch between private family memories and private friend memories.",
     family: "Family Feed",
     friends: "Friend Feed",
+    qrReader: "QR Reader",
   },
   es: {
     label: "Feed de red",
@@ -18,6 +21,7 @@ const copy = {
     subtitle: "Cambia entre recuerdos familiares privados y recuerdos privados de amigos.",
     family: "Feed familiar",
     friends: "Feed de amigos",
+    qrReader: "Lector QR",
   },
 };
 
@@ -79,6 +83,11 @@ export default function MobileFeedPage() {
           {t.friends}
         </button>
       </div>
+
+      <Link href="/mobile/scan" className="mobileFeedQrButton">
+        <QrCode size={18} />
+        <span>{t.qrReader}</span>
+      </Link>
 
       <FamilyActivityFeed feedType={feedType} />
     </section>
