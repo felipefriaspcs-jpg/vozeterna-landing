@@ -25,19 +25,19 @@ const copy = {
     privateNote: "Files are private by default and saved inside the selected profile.",
   },
   es: {
-    label: "Subida móvil",
+    label: "Subida mÃ³vil",
     title: "Sube un recuerdo",
-    subtitle: "Elige una foto, audio, video o documento desde tu teléfono sin salir de la app móvil.",
+    subtitle: "Elige una foto, audio, video o documento desde tu telÃ©fono sin salir de la app mÃ³vil.",
     choose: "Elegir archivo",
     selected: "Archivo seleccionado",
     profile: "Conectar a perfil",
-    profileFallback: "Bóveda familiar predeterminada",
+    profileFallback: "BÃ³veda familiar predeterminada",
     note: "Nota del recuerdo",
     placeholder: "Escribe una nota corta sobre este recuerdo...",
     upload: "Subir recuerdo",
     uploading: "Subiendo...",
     saved: "Recuerdo subido.",
-    signIn: "Inicia sesión antes de subir.",
+    signIn: "Inicia sesiÃ³n antes de subir.",
     noFile: "Primero elige un archivo.",
     privateNote: "Los archivos son privados por defecto y se guardan dentro del perfil seleccionado.",
   },
@@ -79,7 +79,7 @@ export default function MobileUploadPage() {
   async function loadVaults() {
     const queryParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
     const queryVaultId = queryParams?.get("vaultId") || "";
-    const queryAlbumId = queryParams?.get("albumId") || "";
+    const queryAlbumId = queryParams?.get("albumId") || queryParams?.get("collectionId") || "";
     setSelectedAlbumId(queryAlbumId);
 
     const { data } = await supabase
@@ -160,7 +160,7 @@ export default function MobileUploadPage() {
             <option value="">{t.profileFallback}</option>
             {vaults.map((vault) => (
               <option value={vault.id} key={vault.id}>
-                {(vault.subject_name || vault.title) + " · " + (vault.relationship_label || "Vault")}
+                {(vault.subject_name || vault.title) + " Â· " + (vault.relationship_label || "Vault")}
               </option>
             ))}
           </select>

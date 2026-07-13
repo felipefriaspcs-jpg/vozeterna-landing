@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { FolderHeart, Pencil, Plus } from "lucide-react";
+import { BookOpen, FolderHeart, Pencil, Plus } from "lucide-react";
 import { supabase } from "../../../../lib/supabaseClient";
 import { getInitialMobileLanguage } from "../../../../components/mobile/mobileLanguage";
 
@@ -95,33 +95,93 @@ export default function MobileCollectionDetailPage() {
 
       setCollection(collectionData);
 
-      const { data: itemData } = await supabase
+      const { data: itemRows } = await supabase
         .from("memory_collection_items")
-        .select(`
-          id,
-          sort_order,
-          created_at,
-          media_assets (
-            *
-          )
-        `)
+        .select("id, memory_id, sort_order, created_at")
         .eq("collection_id", id)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });
 
-      const loadedItems = itemData || [];
-      setItems(loadedItems);
+      const rows = itemRows || [];
+      const memoryIds = rows.map((item) => item.memory_id).filter(Boolean);
+
+      let v2Memories = [];
+      let legacyMemories = [];
+
+      if (memoryIds.length > 0) {
+        const [{ data: memoriesData }, { data: mediaData }] = await Promise.all([
+          supabase
+            .from("memories")
+            .select("id, title, body, type, media_path, media_mime_type, media_size_bytes, created_at")
+            .in("id", memoryIds),
+          supabase
+            .from("media_assets")
+            .select("*")
+            .in("id", memoryIds),
+        ]);
+
+        v2Memories = memoriesData || [];
+        legacyMemories = mediaData || [];
+      }
+
+      const v2ById = new Map(v2Memories.map((memory) => [memory.id, memory]));
+      const legacyById = new Map(legacyMemories.map((memory) => [memory.id, memory]));
+
+      const normalizedItems = rows
+        .map((item) => {
+          const v2 = v2ById.get(item.memory_id);
+          const legacy = legacyById.get(item.memory_id);
+
+          if (v2) {
+            return {
+              ...item,
+              source: "memories",
+              memory: {
+                id: v2.id,
+                title: v2.title,
+                note: v2.body,
+                type: v2.type,
+                fileName: v2.title || "Memory",
+                filePath: v2.media_path,
+                fileType: v2.media_mime_type,
+                createdAt: v2.created_at,
+              },
+            };
+          }
+
+          if (legacy) {
+            return {
+              ...item,
+              source: "media_assets",
+              memory: {
+                id: legacy.id,
+                title: legacy.memory_note || legacy.title || legacy.file_name,
+                note: legacy.memory_note,
+                type: legacy.memory_type,
+                fileName: legacy.file_name,
+                filePath: legacy.file_path,
+                fileType: legacy.file_type,
+                createdAt: legacy.created_at,
+              },
+            };
+          }
+
+          return null;
+        })
+        .filter(Boolean);
+
+      setItems(normalizedItems);
 
       const urlMap = {};
 
-      for (const item of loadedItems) {
-        const memory = item.media_assets;
+      for (const item of normalizedItems) {
+        const memory = item.memory;
 
-        if (!memory?.file_path) continue;
+        if (!memory?.filePath) continue;
 
         const { data: signedData } = await supabase.storage
           .from("family-media")
-          .createSignedUrl(memory.file_path, 60 * 10);
+          .createSignedUrl(memory.filePath, 60 * 10);
 
         if (signedData?.signedUrl) {
           urlMap[memory.id] = signedData.signedUrl;
@@ -177,7 +237,7 @@ export default function MobileCollectionDetailPage() {
   if (loading) {
     return (
       <section className="mobileScreenStack mobileAlbumsPolish">
-        <section className="mobileAlbumHeroCard">
+        <section className="mobileAlbumHeroCard mobileAlbumCoverCard">
           <p className="mobileCapsLabel">{t.label}</p>
           <h1>{t.loading}</h1>
         </section>
@@ -188,7 +248,7 @@ export default function MobileCollectionDetailPage() {
   if (!collection) {
     return (
       <section className="mobileScreenStack mobileAlbumsPolish">
-        <section className="mobileAlbumHeroCard">
+        <section className="mobileAlbumHeroCard mobileAlbumCoverCard">
           <p className="mobileCapsLabel">{t.label}</p>
           <h1>{t.notFound}</h1>
           <p className="mobileAlbumSubtitle">{t.notFoundText}</p>
@@ -205,7 +265,9 @@ export default function MobileCollectionDetailPage() {
 
   return (
     <section className="mobileScreenStack mobileAlbumsPolish">
-      <section className="mobileAlbumHeroCard">
+      <section className="mobileAlbumHeroCard mobileAlbumCoverCard">
+        <div className="mobileAlbumSpine" />
+
         <div className="mobileAlbumHeroTop">
           <p className="mobileCapsLabel">{t.label}</p>
 
@@ -215,7 +277,11 @@ export default function MobileCollectionDetailPage() {
         </div>
 
         <div className="mobileAlbumStack">
-          <h1>{collection.title}</h1>
+          <div className="mobileAlbumCoverIcon">
+            <BookOpen size={28} />
+          </div>
+
+          <h1 className="mobileAlbumWhiteTitle">{collection.title}</h1>
 
           <p className="mobileAlbumSubtitle">
             {t.linkedTo} {lovedOneName}
@@ -232,7 +298,7 @@ export default function MobileCollectionDetailPage() {
             {t.edit}
           </Link>
 
-          <Link href={`/mobile/upload?collectionId=${collection.id}`} className="mobileAlbumPrimaryBtn">
+          <Link href={`/mobile/upload?albumId=${collection.id}`} className="mobileAlbumPrimaryBtn">
             <Plus size={16} />
             {t.uploadMemory}
           </Link>
@@ -259,7 +325,7 @@ export default function MobileCollectionDetailPage() {
             <h3>{t.emptyTitle}</h3>
             <p>{t.emptyText}</p>
 
-            <Link href={`/mobile/upload?collectionId=${collection.id}`} className="mobileAlbumPrimaryBtn">
+            <Link href={`/mobile/upload?albumId=${collection.id}`} className="mobileAlbumPrimaryBtn">
               <Plus size={17} />
               {t.uploadMemory}
             </Link>
@@ -267,16 +333,16 @@ export default function MobileCollectionDetailPage() {
         ) : (
           <div className="mobileAlbumMemoryList">
             {items.map((item) => {
-              const memory = item.media_assets;
+              const memory = item.memory;
               if (!memory) return null;
 
-              const kind = getFileKind(memory.file_name, memory.file_type);
+              const kind = getFileKind(memory.fileName, memory.fileType);
               const url = signedUrls[memory.id];
 
               return (
                 <article className="mobileAlbumMemoryCard" key={item.id}>
                   {kind === "image" && url && (
-                    <img src={url} alt={memory.file_name || "Memory"} className="mobileMemoryPreviewImage" />
+                    <img src={url} alt={memory.fileName || "Memory"} className="mobileMemoryPreviewImage" />
                   )}
 
                   {kind === "audio" && url && <audio controls src={url} />}
@@ -285,12 +351,18 @@ export default function MobileCollectionDetailPage() {
                     <video controls src={url} className="mobileMemoryPreviewVideo" />
                   )}
 
+                  {kind === "file" && (
+                    <div className="mobileAlbumFilePreview">
+                      <FolderHeart size={22} />
+                    </div>
+                  )}
+
                   <h3 className="mobileAlbumMemoryCardTitle">
-                    {memory.memory_note || memory.title || memory.file_name || "Memory"}
+                    {memory.note || memory.title || memory.fileName || "Memory"}
                   </h3>
 
                   <p className="mobileAlbumMemoryCardMeta">
-                    {t.saved}: {formatDate(memory.created_at)}
+                    {t.saved}: {formatDate(memory.createdAt)}
                   </p>
 
                   <div className="mobileAlbumActionRow compact">
