@@ -17976,3 +17976,112 @@ select.appInput {
   font-size: 0.78rem;
   line-height: 1.35;
 }
+/* Force-fix mobile right-side memory dropdown menus */
+.mobileMemoryActionWrap {
+  position: relative;
+  z-index: 999;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+  pointer-events: auto;
+}
+
+.mobileMemoryDots {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid var(--mobile-faint, rgba(255, 255, 255, 0.14));
+  color: var(--mobile-text, #fff3df);
+  background: var(--mobile-bg-soft, rgba(255, 255, 255, 0.07));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  touch-action: manipulation;
+  pointer-events: auto;
+}
+
+.mobileMemoryDots.isOpen,
+.mobileMemoryDots:active {
+  transform: scale(0.98);
+  background: rgba(216, 170, 99, 0.18);
+  border-color: rgba(216, 170, 99, 0.36);
+}
+
+.mobileMemoryMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 99999;
+  min-width: 210px;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(216, 170, 99, 0.13), transparent 34%),
+    var(--mobile-card, #09252c);
+  border: 1px solid var(--mobile-border, rgba(216, 170, 99, 0.24));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
+  pointer-events: auto;
+}
+
+.mobileMemoryMenu::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 14px;
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  background: var(--mobile-card, #09252c);
+  border-left: 1px solid var(--mobile-border, rgba(216, 170, 99, 0.24));
+  border-top: 1px solid var(--mobile-border, rgba(216, 170, 99, 0.24));
+}
+
+.mobileMemoryMenu button {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 13px;
+  color: var(--mobile-text, #fff3df);
+  background: transparent;
+  text-align: left;
+  font-weight: 850;
+  cursor: pointer;
+  touch-action: manipulation;
+  pointer-events: auto;
+}
+
+.mobileMemoryMenu button:hover,
+.mobileMemoryMenu button:active {
+  background: var(--mobile-bg-soft, rgba(255, 255, 255, 0.07));
+}
+
+.mobileMemoryMenu button.danger {
+  color: #ffd8d1;
+}
+
+.mobileMemoryMenu button.danger:hover,
+.mobileMemoryMenu button.danger:active {
+  background: rgba(150, 48, 48, 0.18);
+}
+
+/* Prevent card clipping from hiding open action menus */
+.familyFeedMemoryCard,
+.mobileMemoryCard,
+.mobileProfileCard,
+.mobileMemoryDetailCard,
+.mobileCommentsPanel,
+.mobileFormCard {
+  overflow: visible;
+}

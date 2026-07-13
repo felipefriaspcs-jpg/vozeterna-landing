@@ -34,44 +34,71 @@ export default function MobileMemoryActions({
   labels = defaultLabels,
 }) {
   const router = useRouter();
+  const menuRef = useRef(null);
+
   const [open, setOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
-  const menuRef = useRef(null);
 
   const t = { ...defaultLabels, ...labels };
 
   useEffect(() => {
-    function handleClick(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+    function handleOutsideClick(event) {
+      if (!menuRef.current) return;
+
+      if (!menuRef.current.contains(event.target)) {
         setOpen(false);
       }
     }
 
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("touchstart", handleClick);
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("click", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("touchstart", handleClick);
+      document.removeEventListener("click", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
-  if (!memory?.id) return null;
+  if (!memory?.id) {
+    return null;
+  }
 
   const memoryHref = `/mobile/memories/${memory.id}`;
   const editHref = `/mobile/memories/${memory.id}/edit`;
   const securityHref = memory.vault_id
     ? `/mobile/security?vaultId=${memory.vault_id}&memoryId=${memory.id}`
     : `/mobile/security?memoryId=${memory.id}`;
+
   const resolvedCommentsHref =
     commentsHref || (activityId ? `/mobile/comments/${activityId}` : "");
 
-  function goTo(path) {
+  function stopEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function toggleMenu(event) {
+    stopEvent(event);
+    setOpen((current) => !current);
+  }
+
+  function goTo(event, path) {
+    stopEvent(event);
     setOpen(false);
     router.push(path);
   }
 
-  async function shareMemory() {
+  async function shareMemory(event) {
+    stopEvent(event);
+
     const url =
       typeof window !== "undefined"
         ? `${window.location.origin}${memoryHref}`
@@ -91,19 +118,31 @@ export default function MobileMemoryActions({
 
       await navigator.clipboard.writeText(url);
       setShareStatus("copied");
-      window.setTimeout(() => setShareStatus(""), 1600);
+
+      window.setTimeout(() => {
+        setShareStatus("");
+      }, 1600);
     } catch {
-      // no-op
+      setShareStatus("");
     }
   }
 
-  async function deleteMemory() {
+  async function deleteMemory(event) {
+    stopEvent(event);
+
     const confirmed = window.confirm(t.confirmDelete);
-    if (!confirmed) return;
+
+    if (!confirmed) {
+      return;
+    }
 
     try {
       if (memory.media_path) {
         await supabase.storage.from("family-media").remove([memory.media_path]);
+      }
+
+      if (memory.narration_audio_path) {
+        await supabase.storage.from("family-media").remove([memory.narration_audio_path]);
       }
 
       const { error } = await supabase.from("memories").delete().eq("id", memory.id);
@@ -123,48 +162,59 @@ export default function MobileMemoryActions({
   }
 
   return (
-    <div className="mobileMemoryActionWrap" ref={menuRef}>
+    <div
+      className="mobileMemoryActionWrap"
+      ref={menuRef}
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
+    >
       <button
         type="button"
-        className="mobileMemoryDots"
+        className={`mobileMemoryDots ${open ? "isOpen" : ""}`}
         aria-label="Memory actions"
-        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        onClick={toggleMenu}
       >
-        <MoreVertical size={18} />
+        <MoreVertical size={19} />
       </button>
 
       {open && (
-        <div className="mobileMemoryMenu">
-          <button type="button" onClick={() => goTo(memoryHref)}>
-            <Eye size={15} />
-            {t.view}
+        <div className="mobileMemoryMenu" role="menu">
+          <button type="button" role="menuitem" onClick={(event) => goTo(event, memoryHref)}>
+            <Eye size={16} />
+            <span>{t.view}</span>
           </button>
 
-          <button type="button" onClick={() => goTo(editHref)}>
-            <Edit3 size={15} />
-            {t.edit}
+          <button type="button" role="menuitem" onClick={(event) => goTo(event, editHref)}>
+            <Edit3 size={16} />
+            <span>{t.edit}</span>
           </button>
 
-          <button type="button" onClick={() => goTo(securityHref)}>
-            <ShieldCheck size={15} />
-            {t.security}
+          <button type="button" role="menuitem" onClick={(event) => goTo(event, securityHref)}>
+            <ShieldCheck size={16} />
+            <span>{t.security}</span>
           </button>
 
           {resolvedCommentsHref && (
-            <button type="button" onClick={() => goTo(resolvedCommentsHref)}>
-              <MessageCircle size={15} />
-              {t.comments}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={(event) => goTo(event, resolvedCommentsHref)}
+            >
+              <MessageCircle size={16} />
+              <span>{t.comments}</span>
             </button>
           )}
 
-          <button type="button" onClick={shareMemory}>
-            {shareStatus === "copied" ? <Check size={15} /> : <Share2 size={15} />}
-            {shareStatus === "copied" ? t.copied : t.share}
+          <button type="button" role="menuitem" onClick={shareMemory}>
+            {shareStatus === "copied" ? <Check size={16} /> : <Share2 size={16} />}
+            <span>{shareStatus === "copied" ? t.copied : t.share}</span>
           </button>
 
-          <button type="button" className="danger" onClick={deleteMemory}>
-            <Trash2 size={15} />
-            {t.delete}
+          <button type="button" role="menuitem" className="danger" onClick={deleteMemory}>
+            <Trash2 size={16} />
+            <span>{t.delete}</span>
           </button>
         </div>
       )}
