@@ -9,35 +9,35 @@ import { getInitialMobileLanguage } from "../../../../components/mobile/mobileLa
 
 const copy = {
   en: {
-    label: "Create Profile",
-    title: "New loved one vault",
-    subtitle: "Create a private family profile that can hold memories, photos, videos, and reflections.",
+    label: "Create Vault",
+    title: "New vault",
+    subtitle: "Create a private memory vault that can hold memories, photos, videos, and reflections.",
     name: "Name",
     namePlaceholder: "Example: Maria Lopez",
     relationship: "Relationship",
     relationshipPlaceholder: "Mother, father, brother, friend...",
     description: "Short description",
     descriptionPlaceholder: "Write a short note about this person or vault.",
-    save: "Create profile",
+    save: "Create vault",
     saving: "Creating...",
-    saved: "Profile created.",
-    signIn: "Please sign in before creating a profile.",
+    saved: "Vault created.",
+    signIn: "Please sign in before creating a vault.",
     required: "Please enter a name.",
   },
   es: {
-    label: "Crear perfil",
-    title: "Nueva bóveda familiar",
-    subtitle: "Crea un perfil privado para guardar recuerdos, fotos, videos y reflexiones.",
+    label: "Crear boveda",
+    title: "Nueva boveda",
+    subtitle: "Crea una boveda privada para guardar recuerdos, fotos, videos y reflexiones.",
     name: "Nombre",
     namePlaceholder: "Ejemplo: Maria Lopez",
-    relationship: "Relación",
-    relationshipPlaceholder: "Mamá, papá, hermano, amigo...",
-    description: "Descripción corta",
-    descriptionPlaceholder: "Escribe una nota corta sobre esta persona o bóveda.",
-    save: "Crear perfil",
+    relationship: "Relacion",
+    relationshipPlaceholder: "Mama, papa, hermano, amigo...",
+    description: "Descripcion corta",
+    descriptionPlaceholder: "Escribe una nota corta sobre esta persona o boveda.",
+    save: "Crear boveda",
     saving: "Creando...",
-    saved: "Perfil creado.",
-    signIn: "Inicia sesión antes de crear un perfil.",
+    saved: "Boveda creada.",
+    signIn: "Inicia sesion antes de crear una boveda.",
     required: "Escribe un nombre.",
   },
 };
@@ -105,7 +105,7 @@ export default function MobileCreateProfilePage() {
         router.push("/mobile/profiles");
       }, 650);
     } catch (error) {
-      setMessage(error.message || "Could not create profile.");
+      setMessage(error.message || "Could not create vault.");
     } finally {
       setSaving(false);
     }
