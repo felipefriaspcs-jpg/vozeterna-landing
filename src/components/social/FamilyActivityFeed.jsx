@@ -114,6 +114,42 @@ function getActivityLabel(type, t) {
   return t.labels[type] || t.labels.default;
 }
 
+function looksLikeEmail(value = "") {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
+function getProfileDisplayName(profile = {}) {
+  return (
+    profile.display_name ||
+    profile.username ||
+    profile.full_name ||
+    profile.email ||
+    ""
+  );
+}
+
+function getCommentMemoryTitleFromActivityTitle(title = "") {
+  const value = String(title || "");
+  const markers = [" commented on ", " comento en "];
+  const marker = markers.find((item) => value.includes(item));
+
+  if (!marker) return "";
+
+  return value.slice(value.indexOf(marker) + marker.length).trim();
+}
+
+function resolveCommenterName({ metadataName, actorName, fallback }) {
+  const cleanMetadataName = String(metadataName || "").trim();
+  const cleanActorName = String(actorName || "").trim();
+
+  if (cleanActorName && !looksLikeEmail(cleanActorName)) return cleanActorName;
+  if (cleanMetadataName && !looksLikeEmail(cleanMetadataName)) return cleanMetadataName;
+  if (cleanActorName) return cleanActorName;
+  if (cleanMetadataName) return cleanMetadataName;
+
+  return fallback;
+}
+
 function getMemoryMediaKind(memory = {}) {
   const safeMemory = memory || {};
   const type = safeMemory.type || "";
@@ -348,12 +384,7 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
 
       setActorNames(
         profileRows.reduce((map, profile) => {
-          map[profile.id] =
-            profile.display_name ||
-            profile.username ||
-            profile.full_name ||
-            profile.email ||
-            "";
+          map[profile.id] = getProfileDisplayName(profile);
           return map;
         }, {})
       );
@@ -439,8 +470,16 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
             const Icon = getActivityIcon(activity?.activity_type);
             const metadata = activity.metadata || {};
             const isCommentActivity = activity.activity_type === "comment_added";
-            const commenterName = metadata.commenter_name || actorNames[activity.actor_id] || t.someone;
-            const commentMemoryTitle = metadata.memory_title || memory?.title || activity?.title || getActivityLabel(activity?.activity_type, t);
+            const commenterName = resolveCommenterName({
+              metadataName: metadata.commenter_name,
+              actorName: actorNames[activity.actor_id],
+              fallback: t.someone,
+            });
+            const commentMemoryTitle =
+              metadata.memory_title ||
+              memory?.title ||
+              getCommentMemoryTitleFromActivityTitle(activity?.title) ||
+              getActivityLabel(activity?.activity_type, t);
             const commentPreview = metadata.body_preview || metadata.comment_preview || "";
             const activityTitle =
               isCommentActivity
