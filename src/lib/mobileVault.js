@@ -272,11 +272,37 @@ export async function createMobileVault({
     throw new Error("Please sign in first.");
   }
 
-  const { networkId } = await ensureNetworkAndVaultByType(supabase, user, networkType);
+  const desiredType = networkType === "friend" ? "friend" : "family";
+  const labels = networkLabels(desiredType);
+  const networkId = crypto.randomUUID();
   const vaultId = crypto.randomUUID();
 
   const cleanName = subjectName?.trim() || "Loved One";
   const cleanRelationship = relationshipLabel?.trim() || (networkType === "friend" ? "Friend" : "Family");
+
+  const networkResult = await supabase.from("networks").insert({
+    id: networkId,
+    created_by: user.id,
+    name: `${cleanName} Private Network`,
+    type: desiredType,
+    description: labels.networkDescription,
+  });
+
+  if (networkResult.error) {
+    throw new Error(networkResult.error.message);
+  }
+
+  const memberResult = await supabase.from("network_members").insert({
+    network_id: networkId,
+    user_id: user.id,
+    role: "owner",
+    invited_by: user.id,
+    accepted_at: new Date().toISOString(),
+  });
+
+  if (memberResult.error) {
+    throw new Error(memberResult.error.message);
+  }
 
   const result = await supabase.from("vaults").insert({
     id: vaultId,

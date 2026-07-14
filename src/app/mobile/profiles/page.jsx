@@ -71,9 +71,20 @@ export default function MobileProfilesPage() {
   async function loadVaults() {
     setLoading(true);
 
-    const { data, error } = await supabase
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user?.id) {
+      setVaults([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data: ownedVaults, error } = await supabase
       .from("vaults")
       .select("id, network_id, title, subject_name, relationship_label, description, created_at")
+      .eq("created_by", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -83,7 +94,37 @@ export default function MobileProfilesPage() {
       return;
     }
 
-    setVaults(data || []);
+    const { data: membershipRows } = await supabase
+      .from("vault_memberships")
+      .select("vault_id")
+      .eq("user_id", user.id);
+
+    const memberVaultIds = [
+      ...new Set((membershipRows || []).map((row) => row.vault_id).filter(Boolean)),
+    ];
+    let memberVaults = [];
+
+    if (memberVaultIds.length > 0) {
+      const { data: sharedVaultRows } = await supabase
+        .from("vaults")
+        .select("id, network_id, title, subject_name, relationship_label, description, created_at")
+        .in("id", memberVaultIds)
+        .order("created_at", { ascending: false });
+
+      memberVaults = sharedVaultRows || [];
+    }
+
+    const vaultMap = new Map();
+
+    [...(ownedVaults || []), ...memberVaults].forEach((vault) => {
+      if (vault?.id) vaultMap.set(vault.id, vault);
+    });
+
+    setVaults(
+      [...vaultMap.values()].sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      )
+    );
     setLoading(false);
   }
 

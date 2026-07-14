@@ -122,7 +122,7 @@ function getProfileDisplayName(profile = {}) {
   return (
     profile.display_name ||
     profile.username ||
-    profile.full_name ||
+    profile.legal_name ||
     profile.email ||
     ""
   );
@@ -144,14 +144,17 @@ function getEmailFromCommentTitle(title = "") {
   return match?.[0] || "";
 }
 
-function resolveCommenterName({ metadataName, actorName, emailProfileName, fallback }) {
+function resolveCommenterName({ metadataName, commenterName, actorName, emailProfileName, fallback }) {
   const cleanMetadataName = String(metadataName || "").trim();
+  const cleanCommenterName = String(commenterName || "").trim();
   const cleanActorName = String(actorName || "").trim();
   const cleanEmailProfileName = String(emailProfileName || "").trim();
 
+  if (cleanCommenterName && !looksLikeEmail(cleanCommenterName)) return cleanCommenterName;
   if (cleanActorName && !looksLikeEmail(cleanActorName)) return cleanActorName;
   if (cleanEmailProfileName && !looksLikeEmail(cleanEmailProfileName)) return cleanEmailProfileName;
   if (cleanMetadataName && !looksLikeEmail(cleanMetadataName)) return cleanMetadataName;
+  if (cleanCommenterName) return cleanCommenterName;
   if (cleanActorName) return cleanActorName;
   if (cleanEmailProfileName) return cleanEmailProfileName;
   if (cleanMetadataName) return cleanMetadataName;
@@ -221,6 +224,10 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
   const t = copy[language] || copy.en;
   const resolvedType = feedType === "friend" ? "friend" : "family";
   const filteredActivities = activities.filter((activity) => {
+    if (activity?.activity_type === "comment_added") {
+      return false;
+    }
+
     const relationshipType = activity?.relationship_type;
 
     if (resolvedType === "friend") {
@@ -378,7 +385,13 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
     }));
     const urls = {};
     const activityIds = rows.map((activity) => activity.id).filter(Boolean);
-    const actorIds = [...new Set(rows.map((activity) => activity.actor_id).filter(Boolean))];
+    const profileIds = [
+      ...new Set(
+        rows
+          .flatMap((activity) => [activity.actor_id, activity.metadata?.commenter_id])
+          .filter(Boolean)
+      ),
+    ];
     const commenterEmails = [
       ...new Set(
         rows
@@ -390,17 +403,17 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
       ),
     ];
 
-    if (actorIds.length > 0) {
+    if (profileIds.length > 0) {
       const withEmail = await supabase
         .from("profiles")
-        .select("id, display_name, username, full_name, email")
-        .in("id", actorIds);
+        .select("id, display_name, username, email, legal_name")
+        .in("id", profileIds);
 
       const profileRows = withEmail.error
         ? (await supabase
             .from("profiles")
-            .select("id, display_name, username, full_name")
-            .in("id", actorIds)).data || []
+            .select("id, display_name, username, email")
+            .in("id", profileIds)).data || []
         : withEmail.data || [];
 
       setActorNames(
@@ -414,7 +427,7 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
     if (commenterEmails.length > 0) {
       const { data: profilesByEmail, error: profilesByEmailError } = await supabase
         .from("profiles")
-        .select("email, display_name, username, full_name")
+        .select("email, display_name, username, legal_name")
         .in("email", commenterEmails);
 
       if (!profilesByEmailError) {
@@ -513,6 +526,7 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
             const titleEmail = getEmailFromCommentTitle(activity.title);
             const commenterName = resolveCommenterName({
               metadataName: metadata.commenter_name,
+              commenterName: actorNames[metadata.commenter_id],
               actorName: actorNames[activity.actor_id],
               emailProfileName: profileNamesByEmail[metadataEmail] || profileNamesByEmail[titleEmail],
               fallback: t.someone,

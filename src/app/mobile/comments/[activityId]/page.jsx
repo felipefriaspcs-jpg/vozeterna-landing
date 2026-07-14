@@ -52,7 +52,7 @@ function getProfileName(profile, fallback) {
   return (
     profile?.display_name ||
     profile?.username ||
-    profile?.full_name ||
+    profile?.legal_name ||
     profile?.email ||
     fallback
   );
@@ -108,13 +108,13 @@ export default function MobileCommentsPage() {
 
     const withEmail = await supabase
       .from("profiles")
-      .select("id, display_name, username, full_name, email")
+      .select("id, display_name, username, email, legal_name")
       .in("id", userIds);
 
     const profileRows = withEmail.error
       ? (await supabase
           .from("profiles")
-          .select("id, display_name, username, full_name")
+          .select("id, display_name, username, email")
           .in("id", userIds)).data || []
       : withEmail.data || [];
 
@@ -132,7 +132,7 @@ export default function MobileCommentsPage() {
 
     const withEmail = await supabase
       .from("profiles")
-      .select("id, display_name, username, full_name, email")
+      .select("id, display_name, username, email, legal_name")
       .eq("id", userId)
       .maybeSingle();
 
@@ -142,7 +142,7 @@ export default function MobileCommentsPage() {
 
     const basic = await supabase
       .from("profiles")
-      .select("id, display_name, username, full_name")
+      .select("id, display_name, username, email")
       .eq("id", userId)
       .maybeSingle();
 
@@ -153,7 +153,7 @@ export default function MobileCommentsPage() {
     if (looksLikeEmail(fallback)) {
       const byEmail = await supabase
         .from("profiles")
-        .select("id, display_name, username, full_name, email")
+        .select("id, display_name, username, email, legal_name")
         .eq("email", fallback)
         .maybeSingle();
 

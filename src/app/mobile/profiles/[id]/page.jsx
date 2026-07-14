@@ -176,6 +176,7 @@ export default function MobileProfileDetailPage() {
   const [canUpdatePhoto, setCanUpdatePhoto] = useState(false);
 
   const t = copy[language] || copy.en;
+  const canCurrentUserUpdatePhoto = canUpdatePhoto || isVaultCreatedByUser(vault, currentUserId);
 
   useEffect(() => {
     setLanguage(getInitialMobileLanguage());
@@ -192,10 +193,29 @@ export default function MobileProfileDetailPage() {
     if (vaultId) loadProfile(vaultId);
   }, [vaultId]);
 
+  function isVaultCreatedByUser(vaultData, userOrId) {
+    const userId = typeof userOrId === "string" ? userOrId : userOrId?.id;
+    return Boolean(vaultData?.created_by && userId && vaultData.created_by === userId);
+  }
+
+  function isVaultCoverManagerRole(role) {
+    return ["owner", "admin", "manager"].includes(String(role || "").toLowerCase());
+  }
+
   async function canManageVaultPhoto(vaultData, user) {
     if (!vaultData?.id || !user?.id) return false;
 
-    if (vaultData.created_by === user.id) return true;
+    if (isVaultCreatedByUser(vaultData, user)) return true;
+
+    const { data: vaultMember } = await supabase
+      .from("vault_memberships")
+      .select("role")
+      .eq("vault_id", vaultData.id)
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (isVaultCoverManagerRole(vaultMember?.role)) return true;
 
     if (vaultData.network_id) {
       const { data: member } = await supabase
@@ -206,20 +226,38 @@ export default function MobileProfileDetailPage() {
         .limit(1)
         .maybeSingle();
 
-      const role = String(member?.role || "").toLowerCase();
-      if (role === "owner" || role === "admin") return true;
+      if (isVaultCoverManagerRole(member?.role)) return true;
     }
+
+    return false;
+  }
+
+  async function canViewVault(vaultData, user) {
+    if (!vaultData?.id || !user?.id) return false;
+
+    if (vaultData.created_by === user.id) return true;
 
     const { data: vaultMember } = await supabase
       .from("vault_memberships")
-      .select("role")
+      .select("vault_id")
       .eq("vault_id", vaultData.id)
       .eq("user_id", user.id)
       .limit(1)
       .maybeSingle();
 
-    const vaultRole = String(vaultMember?.role || "").toLowerCase();
-    return vaultRole === "owner" || vaultRole === "admin";
+    if (vaultMember?.vault_id) return true;
+
+    if (!vaultData.network_id) return false;
+
+    const { data: networkMember } = await supabase
+      .from("network_members")
+      .select("network_id")
+      .eq("network_id", vaultData.network_id)
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    return Boolean(networkMember?.network_id);
   }
 
   async function loadProfile(id) {
@@ -236,6 +274,16 @@ export default function MobileProfileDetailPage() {
       .maybeSingle();
 
     if (vaultError || !vaultData) {
+      setVault(null);
+      setMemories([]);
+      setCanUpdatePhoto(false);
+      setLoading(false);
+      return;
+    }
+
+    const nextCanViewVault = await canViewVault(vaultData, user);
+
+    if (!nextCanViewVault) {
       setVault(null);
       setMemories([]);
       setCanUpdatePhoto(false);
@@ -313,7 +361,7 @@ export default function MobileProfileDetailPage() {
     }
 
     setVault(vaultData);
-    setCanUpdatePhoto(nextCanUpdatePhoto);
+    setCanUpdatePhoto(nextCanUpdatePhoto || isVaultCreatedByUser(vaultData, user));
     setCoverUrl(nextCoverUrl);
     setMemories(rows);
     setActivitiesByMemory(activityMap);
@@ -336,7 +384,9 @@ export default function MobileProfileDetailPage() {
 
       if (!user) throw new Error("Please sign in first.");
 
-      if (!canUpdatePhoto) throw new Error(t.photoOwnerOnly);
+      const allowedToUpdatePhoto = isVaultCreatedByUser(vault, user) || (await canManageVaultPhoto(vault, user));
+      if (!allowedToUpdatePhoto) throw new Error(t.photoOwnerOnly);
+      if (!canUpdatePhoto) setCanUpdatePhoto(true);
 
       const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
       const filePath = `${user.id}/profile-covers/${vault.id}-${Date.now()}-${safeName}`;
@@ -589,7 +639,7 @@ export default function MobileProfileDetailPage() {
         <h1>{vault.subject_name || vault.title}</h1>
         <p>{vault.description || t.privateArchive}</p>
 
-        {canUpdatePhoto ? (
+        {canCurrentUserUpdatePhoto ? (
           <button type="button" className="mobilePhotoButton" onClick={() => photoInputRef.current?.click()} disabled={photoSaving}>
             <Camera size={16} />
             {photoSaving ? t.savingPhoto : t.updatePhoto}
