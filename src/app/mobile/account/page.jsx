@@ -14,7 +14,8 @@ const copy = {
     signedOut: "Sign in to manage your private account settings.",
     signIn: "Log in / Create account",
     email: "Email",
-    displayName: "Display name / username",
+    displayName: "Display name",
+    username: "Username",
     phone: "Phone",
     address: "Address",
     avatar: "Profile picture",
@@ -26,6 +27,8 @@ const copy = {
       "Saved the fields supported by your current profiles table. Some fields may need SQL columns.",
     noEditable:
       "Your profiles table does not expose editable account fields yet. SQL may be needed.",
+    missingFields:
+      "Some profile fields are not available yet. Please add the missing profile columns in Supabase.",
     loadError: "Could not load account profile.",
     saveError: "Could not save account changes. Some profile columns may be missing.",
     verification: "Verification status",
@@ -45,7 +48,8 @@ const copy = {
     signedOut: "Inicia sesion para administrar tu cuenta privada.",
     signIn: "Iniciar sesion / Crear cuenta",
     email: "Email",
-    displayName: "Nombre visible / usuario",
+    displayName: "Nombre visible",
+    username: "Usuario",
     phone: "Telefono",
     address: "Direccion",
     avatar: "Foto de perfil",
@@ -57,6 +61,8 @@ const copy = {
       "Se guardaron los campos disponibles en tu tabla profiles. Algunos campos pueden necesitar SQL.",
     noEditable:
       "Tu tabla profiles aun no expone campos editables de cuenta. Puede necesitar SQL.",
+    missingFields:
+      "Algunos campos de perfil aun no estan disponibles. Agrega las columnas faltantes en Supabase.",
     loadError: "No se pudo cargar el perfil de cuenta.",
     saveError: "No se pudieron guardar los cambios. Puede faltar alguna columna.",
     verification: "Estado de verificacion",
@@ -72,8 +78,8 @@ const copy = {
   },
 };
 
-const NAME_FIELDS = ["display_name", "username", "full_name"];
-const EDITABLE_FIELDS = [...NAME_FIELDS, "phone", "address"];
+const DISPLAY_NAME_FIELDS = ["display_name", "full_name"];
+const EDITABLE_FIELDS = [...DISPLAY_NAME_FIELDS, "username", "phone", "address"];
 
 function formatStatus(value, fallback) {
   const clean = String(value || "").trim();
@@ -91,8 +97,8 @@ function getAvatarUrl(profile = {}) {
   return profile.avatar_url || profile.profile_photo_url || "";
 }
 
-function getPreferredNameField(profile = {}) {
-  return NAME_FIELDS.find((field) => Object.prototype.hasOwnProperty.call(profile, field));
+function getPreferredDisplayNameField(profile = {}) {
+  return DISPLAY_NAME_FIELDS.find((field) => Object.prototype.hasOwnProperty.call(profile, field));
 }
 
 function tierClass(value = "free") {
@@ -108,8 +114,7 @@ export default function MobileAccountPage() {
   const [language, setLanguage] = useState("en");
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [profileKey, setProfileKey] = useState(null);
-  const [form, setForm] = useState({ displayName: "", phone: "", address: "" });
+  const [form, setForm] = useState({ displayName: "", username: "", phone: "", address: "" });
   const [authOpen, setAuthOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -123,8 +128,6 @@ export default function MobileAccountPage() {
   const premiumValue = getPremiumValue(profile || {});
   const premiumTier = formatStatus(premiumValue, t.free);
   const isVerified = profile?.verification_status === "verified" || profile?.kyc_status === "verified";
-  const isPremium = Boolean(premiumValue && String(premiumValue).toLowerCase() !== "free");
-
   const supportedFields = useMemo(() => {
     if (!profile) return [];
     return EDITABLE_FIELDS.filter((field) => hasField(profile, field));
@@ -163,7 +166,6 @@ export default function MobileAccountPage() {
 
       if (!currentUser) {
         setProfile(null);
-        setProfileKey(null);
         setLoading(false);
         return;
       }
@@ -184,7 +186,6 @@ export default function MobileAccountPage() {
         loadProfile(session.user);
       } else {
         setProfile(null);
-        setProfileKey(null);
       }
     });
 
@@ -205,42 +206,61 @@ export default function MobileAccountPage() {
       if (byId.error) throw byId.error;
 
       if (byId.data) {
-        applyProfile(byId.data, { column: "id", value: currentUser.id }, currentUser);
+        applyProfile(byId.data, currentUser);
         return;
       }
 
-      const byUserId = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .maybeSingle();
-
-      if (byUserId.error) throw byUserId.error;
-
-      applyProfile(byUserId.data || {}, byUserId.data ? { column: "user_id", value: currentUser.id } : null, currentUser);
+      const createdProfile = await createProfileRow(currentUser);
+      applyProfile(createdProfile, currentUser);
     } catch (error) {
       setProfile({});
-      setProfileKey(null);
       setMessage(error.message || t.loadError);
       setForm({
         displayName: currentUser?.user_metadata?.full_name || "",
+        username: currentUser?.email?.split("@")[0] || "",
         phone: "",
         address: "",
       });
     }
   }
 
-  function applyProfile(nextProfile, key, currentUser) {
-    const nameField = getPreferredNameField(nextProfile);
+  async function createProfileRow(currentUser) {
+    const withEmail = await supabase
+      .from("profiles")
+      .upsert(
+        { id: currentUser.id, email: currentUser.email },
+        { onConflict: "id" }
+      )
+      .select("*")
+      .maybeSingle();
+
+    if (!withEmail.error) return withEmail.data || { id: currentUser.id, email: currentUser.email };
+
+    const idOnly = await supabase
+      .from("profiles")
+      .upsert(
+        { id: currentUser.id },
+        { onConflict: "id" }
+      )
+      .select("*")
+      .maybeSingle();
+
+    if (idOnly.error) throw idOnly.error;
+
+    return idOnly.data || { id: currentUser.id };
+  }
+
+  function applyProfile(nextProfile, currentUser) {
+    const nameField = getPreferredDisplayNameField(nextProfile);
 
     setProfile(nextProfile);
-    setProfileKey(key);
     setForm({
       displayName:
         (nameField ? nextProfile[nameField] : "") ||
         currentUser?.user_metadata?.full_name ||
         currentUser?.email?.split("@")[0] ||
         "",
+      username: nextProfile.username || "",
       phone: nextProfile.phone || "",
       address: nextProfile.address || "",
     });
@@ -258,20 +278,16 @@ export default function MobileAccountPage() {
       return;
     }
 
-    if (!profileKey) {
-      setMessage(t.noEditable);
-      return;
-    }
-
     const payload = {};
-    const nameField = getPreferredNameField(profile || {});
+    const nameField = getPreferredDisplayNameField(profile || {});
 
     if (nameField) payload[nameField] = form.displayName.trim();
+    if (hasField(profile || {}, "username")) payload.username = form.username.trim();
     if (hasField(profile || {}, "phone")) payload.phone = form.phone.trim();
     if (hasField(profile || {}, "address")) payload.address = form.address.trim();
 
     if (Object.keys(payload).length === 0) {
-      setMessage(t.noEditable);
+      setMessage(t.missingFields);
       return;
     }
 
@@ -281,12 +297,12 @@ export default function MobileAccountPage() {
     const { error } = await supabase
       .from("profiles")
       .update(payload)
-      .eq(profileKey.column, profileKey.value);
+      .eq("id", user.id);
 
     setSaving(false);
 
     if (error) {
-      setMessage(error.message || t.saveError);
+      setMessage(t.missingFields);
       return;
     }
 
@@ -353,7 +369,16 @@ export default function MobileAccountPage() {
               <input
                 value={form.displayName}
                 onChange={(event) => updateForm("displayName", event.target.value)}
-                disabled={loading || !profile || !NAME_FIELDS.some((field) => hasField(profile, field))}
+                disabled={loading || !profile || !DISPLAY_NAME_FIELDS.some((field) => hasField(profile, field))}
+              />
+            </label>
+
+            <label>
+              {t.username}
+              <input
+                value={form.username}
+                onChange={(event) => updateForm("username", event.target.value)}
+                disabled={loading || !hasField(profile || {}, "username")}
               />
             </label>
 

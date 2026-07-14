@@ -14,7 +14,7 @@ const copy = {
     loading: "Loading connected people...",
     emptyTitle: "No connected people yet.",
     emptyText: "Invite family or friends with a QR code to start building your private network.",
-    connect: "Connect family",
+    connect: "Connect family & friends",
     signIn: "Please sign in to see connected people.",
     family: "Family",
     friend: "Friend",
@@ -37,7 +37,7 @@ const copy = {
     loading: "Cargando personas conectadas...",
     emptyTitle: "Todavia no hay personas conectadas.",
     emptyText: "Invita familia o amigos con un codigo QR para empezar tu red privada.",
-    connect: "Conectar familia",
+    connect: "Conectar familia y amigos",
     signIn: "Inicia sesion para ver personas conectadas.",
     family: "Familia",
     friend: "Amigo",
@@ -242,17 +242,6 @@ export default function MobilePeoplePage() {
     (byId.data || []).forEach((profile) => {
       profilesByUserId.set(profile.id, profile);
     });
-
-    const byUserId = await supabase
-      .from("profiles")
-      .select("*")
-      .in("user_id", userIds);
-
-    if (!byUserId.error) {
-      (byUserId.data || []).forEach((profile) => {
-        profilesByUserId.set(profile.user_id, profile);
-      });
-    }
 
     return profilesByUserId;
   }

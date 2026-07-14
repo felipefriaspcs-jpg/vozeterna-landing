@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
+  Archive,
   BookOpen,
   FolderHeart,
   Globe2,
@@ -88,7 +89,7 @@ function getNavItems(t) {
     { href: mobileRoutes.home, label: t.dashboard, icon: Home },
     { href: mobileRoutes.feed, label: t.feed, icon: Globe2 },
     { href: mobileRoutes.library, label: t.library, icon: LibraryBig },
-    { href: mobileRoutes.profiles, label: t.profile, icon: UserRound },
+    { href: mobileRoutes.profiles, label: t.profile, icon: Archive },
     { href: mobileRoutes.record, label: t.record, icon: Mic2 },
   ];
 }
@@ -98,7 +99,7 @@ function getMenuItems(t) {
     { href: mobileRoutes.home, label: t.dashboard, icon: Home },
     { href: mobileRoutes.feed, label: t.feed, icon: Globe2 },
     { href: mobileRoutes.library, label: t.library, icon: LibraryBig },
-    { href: mobileRoutes.profiles, label: t.profile, icon: UserRound },
+    { href: mobileRoutes.profiles, label: t.profile, icon: Archive },
     { href: mobileRoutes.people, label: t.people, icon: UsersRound },
     { href: mobileRoutes.collections, label: t.collections, icon: FolderHeart },
     { href: mobileRoutes.record, label: t.record, icon: Mic2 },

@@ -27,13 +27,14 @@ const copy = {
     navFuneral: "For Funeral Homes",
     navPricing: "Pricing",
     navAbout: "About",
-    start: "Start a Legacy",
+    start: "Start Family Vault",
 
     eyebrow: "BILINGUAL LEGACY & MEMORIAL PLATFORM",
-    heroTitle: "Preserve your voice for the generations who haven't met you yet.",
-    heroText: "VozEterna helps families save video, audio, photos, final messages, and social legacy wishes before it is too late.",
-    primaryCta: "Create a Family Legacy",
-    secondaryCta: "See How It Works",
+    heroTitle: "A private family vault for voices, stories, photos, and memorial pages.",
+    heroText: "VozEterna helps family members, friends, funeral homes, and future premium users preserve meaningful memories, invite trusted people, and share only what they intentionally approve.",
+    primaryCta: "Start Family Vault",
+    secondaryCta: "Request Demo",
+    partnerCta: "Partner with VozEterna",
     trust: "Private by default - English and Spanish - QR memorial ready",
 
     features: [
@@ -130,13 +131,14 @@ const copy = {
     navFuneral: "Para Funerarias",
     navPricing: "Precios",
     navAbout: "Acerca de",
-    start: "Iniciar un Legado",
+    start: "Iniciar Boveda Familiar",
 
     eyebrow: "PLATAFORMA BILINGUE DE LEGADO Y MEMORIA",
-    heroTitle: "Conserva tu voz para las generaciones que aun no te conocen.",
-    heroText: "VozEterna ayuda a tu familia a crear una boveda privada de voces, historias y recuerdos para que hijos, nietos y futuras generaciones puedan escuchar, aprender y mantener viva la historia.",
-    primaryCta: "Crear un Legado Familiar",
-    secondaryCta: "Ver Como Funciona",
+    heroTitle: "Una boveda familiar privada para voces, historias, fotos y paginas memoriales.",
+    heroText: "VozEterna ayuda a familiares, amigos, funerarias y futuros usuarios premium a preservar recuerdos, invitar personas de confianza y compartir solo lo aprobado intencionalmente.",
+    primaryCta: "Iniciar Boveda Familiar",
+    secondaryCta: "Solicitar Demo",
+    partnerCta: "Aliarse con VozEterna",
     trust: "Privado por defecto - Espanol e ingles - Memorial con QR listo",
 
     features: [
@@ -294,8 +296,9 @@ export default function Home() {
           <h1>{t.heroTitle}</h1>
           <p className="lede">{t.heroText}</p>
           <div className="heroActions">
-            <Cta href={familyForm}>{t.primaryCta}</Cta>
-            <Cta href="#how" variant="secondary">{t.secondaryCta}</Cta>
+            <Cta href="/mobile">{t.primaryCta}</Cta>
+            <Cta href={familyForm} variant="secondary">{t.secondaryCta}</Cta>
+            <Cta href={funeralForm} variant="gold">{t.partnerCta}</Cta>
           </div>
           <p className="trust">{t.trust}</p>
         </div>
