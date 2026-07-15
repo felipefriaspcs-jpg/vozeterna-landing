@@ -349,7 +349,7 @@ export default function MobileInvitePage() {
       .maybeSingle();
 
     if (existing.error) {
-      throw new Error(existing.error.message);
+      throw existing.error;
     }
 
     const values = {
@@ -371,7 +371,7 @@ export default function MobileInvitePage() {
         });
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw result.error;
     }
 
     return !existing.data?.vault_id;
@@ -449,12 +449,25 @@ export default function MobileInvitePage() {
         role: details.role,
         invitedBy: details.link.created_by,
       });
-      const wasVaultCreated = await ensureVaultMembership({
-        vaultId,
-        currentUser,
-        role: details.role,
-        invitedBy: details.link.created_by,
-      });
+      let wasVaultCreated = false;
+      try {
+        wasVaultCreated = await ensureVaultMembership({
+          vaultId,
+          currentUser,
+          role: details.role,
+          invitedBy: details.link.created_by,
+        });
+      } catch (vaultMembershipError) {
+        console.warn(
+          "[VozEterna] vault_memberships invite acceptance skipped after network_members succeeded:",
+          {
+            message: vaultMembershipError?.message || vaultMembershipError,
+            code: vaultMembershipError?.code,
+            details: vaultMembershipError?.details,
+            hint: vaultMembershipError?.hint,
+          }
+        );
+      }
 
       if (wasNetworkCreated || wasVaultCreated) {
         await incrementInviteUsedCount(details.link);

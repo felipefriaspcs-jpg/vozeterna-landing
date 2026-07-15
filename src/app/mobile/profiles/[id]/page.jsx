@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../../../lib/supabaseClient";
 import { isMemoryOwner } from "../../../../lib/memoryPermissions";
+import { getVaultAccess } from "../../../../lib/mobileVault";
 import { normalizeStoragePath, warnInvalidStoragePath } from "../../../../lib/storagePaths";
 import { getInitialMobileLanguage } from "../../../../components/mobile/mobileLanguage";
 import ShareMemoryButton from "../../../../components/social/ShareMemoryButton";
@@ -174,6 +175,8 @@ export default function MobileProfileDetailPage() {
   const [actionMessage, setActionMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
   const [canUpdatePhoto, setCanUpdatePhoto] = useState(false);
+  const [canManageVault, setCanManageVault] = useState(false);
+  const [canUploadToVault, setCanUploadToVault] = useState(false);
 
   const t = copy[language] || copy.en;
   const canCurrentUserUpdatePhoto = canUpdatePhoto || isVaultCreatedByUser(vault, currentUserId);
@@ -277,21 +280,23 @@ export default function MobileProfileDetailPage() {
       setVault(null);
       setMemories([]);
       setCanUpdatePhoto(false);
+      setCanManageVault(false);
+      setCanUploadToVault(false);
       setLoading(false);
       return;
     }
 
-    const nextCanViewVault = await canViewVault(vaultData, user);
+    const access = await getVaultAccess(supabase, user, vaultData);
 
-    if (!nextCanViewVault) {
+    if (!access.canView) {
       setVault(null);
       setMemories([]);
       setCanUpdatePhoto(false);
+      setCanManageVault(false);
+      setCanUploadToVault(false);
       setLoading(false);
       return;
     }
-
-    const nextCanUpdatePhoto = await canManageVaultPhoto(vaultData, user);
 
     let nextCoverUrl = "";
 
@@ -361,7 +366,9 @@ export default function MobileProfileDetailPage() {
     }
 
     setVault(vaultData);
-    setCanUpdatePhoto(nextCanUpdatePhoto || isVaultCreatedByUser(vaultData, user));
+    setCanUpdatePhoto(access.canManage || isVaultCreatedByUser(vaultData, user));
+    setCanManageVault(access.canManage);
+    setCanUploadToVault(access.canUpload);
     setCoverUrl(nextCoverUrl);
     setMemories(rows);
     setActivitiesByMemory(activityMap);
@@ -384,7 +391,8 @@ export default function MobileProfileDetailPage() {
 
       if (!user) throw new Error("Please sign in first.");
 
-      const allowedToUpdatePhoto = isVaultCreatedByUser(vault, user) || (await canManageVaultPhoto(vault, user));
+      const access = await getVaultAccess(supabase, user, vault);
+      const allowedToUpdatePhoto = isVaultCreatedByUser(vault, user) || access.canManage;
       if (!allowedToUpdatePhoto) throw new Error(t.photoOwnerOnly);
       if (!canUpdatePhoto) setCanUpdatePhoto(true);
 
@@ -445,6 +453,8 @@ export default function MobileProfileDetailPage() {
       } = await supabase.auth.getUser();
 
       if (!user) throw new Error("Please sign in first.");
+      const access = await getVaultAccess(supabase, user, vault);
+      if (!access.canManage) throw new Error("Only the vault owner or an admin can manage albums.");
 
       const { error } = await supabase.from("vault_albums").insert({
         network_id: vault.network_id,
@@ -468,6 +478,15 @@ export default function MobileProfileDetailPage() {
     if (!confirmed) return;
 
     setActionMessage("");
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const access = await getVaultAccess(supabase, user, vault);
+    if (!access.canManage) {
+      setActionMessage("Only the vault owner or an admin can manage albums.");
+      return;
+    }
 
     const { error } = await supabase
       .from("vault_albums")
@@ -514,6 +533,15 @@ export default function MobileProfileDetailPage() {
     if (!vault) return;
 
     setActionMessage("");
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const access = await getVaultAccess(supabase, user, vault);
+    if (!access.canManage) {
+      setActionMessage("Only the vault owner or an admin can manage the public page.");
+      return;
+    }
 
     if (vault.public_enabled) {
       const { error } = await supabase
@@ -652,43 +680,52 @@ export default function MobileProfileDetailPage() {
         {photoMessage && <p className="mobileFormMessage">{photoMessage}</p>}
       </div>
 
-      <section className="mobileActionGrid">
-        <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileActionCard primary">
-          <UploadCloud size={20} />
-          <strong>{t.upload}</strong>
-        </Link>
-
-        <Link href={`/mobile/connect?networkId=${vault.network_id}&vaultId=${vault.id}`} className="mobileActionCard">
-          <QrCode size={20} />
-          <strong>{t.invite}</strong>
-        </Link>
-      </section>
-
-      <section className="mobileFormCard">
-        <p className="mobileCapsLabel">{t.publicPage}</p>
-        <p className="mobileFormHelper">{t.publicNote}</p>
-
-        <button type="button" onClick={togglePublicPage}>
-          {vault.public_enabled ? t.disablePublic : t.enablePublic}
-        </button>
-
-        {vault.public_enabled && vault.public_slug && (
-          <div className="mobilePublicActions">
-            <button type="button" onClick={copyPublicLink}>
-              <Copy size={16} />
-              {t.copyPublic}
-            </button>
-
-            <Link href={`/p/${vault.public_slug}`} target="_blank">
-              <ExternalLink size={16} />
-              {t.viewPublic}
+      {(canUploadToVault || canManageVault) && (
+        <section className="mobileActionGrid">
+          {canUploadToVault && (
+            <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileActionCard primary">
+              <UploadCloud size={20} />
+              <strong>{t.upload}</strong>
             </Link>
-          </div>
-        )}
-      </section>
+          )}
 
-      <section className="mobileFormCard">
-        <p className="mobileCapsLabel">{t.albums}</p>
+          {canManageVault && (
+            <Link href={`/mobile/connect?networkId=${vault.network_id}&vaultId=${vault.id}`} className="mobileActionCard">
+              <QrCode size={20} />
+              <strong>{t.invite}</strong>
+            </Link>
+          )}
+        </section>
+      )}
+
+      {canManageVault && (
+        <section className="mobileFormCard">
+          <p className="mobileCapsLabel">{t.publicPage}</p>
+          <p className="mobileFormHelper">{t.publicNote}</p>
+
+          <button type="button" onClick={togglePublicPage}>
+            {vault.public_enabled ? t.disablePublic : t.enablePublic}
+          </button>
+
+          {vault.public_enabled && vault.public_slug && (
+            <div className="mobilePublicActions">
+              <button type="button" onClick={copyPublicLink}>
+                <Copy size={16} />
+                {t.copyPublic}
+              </button>
+
+              <Link href={`/p/${vault.public_slug}`} target="_blank">
+                <ExternalLink size={16} />
+                {t.viewPublic}
+              </Link>
+            </div>
+          )}
+        </section>
+      )}
+
+      {canManageVault && (
+        <section className="mobileFormCard">
+          <p className="mobileCapsLabel">{t.albums}</p>
 
         <div className="mobileAlbumCreateRow">
           <input value={newAlbumTitle} onChange={(event) => setNewAlbumTitle(event.target.value)} placeholder={t.albumPlaceholder} />
@@ -714,8 +751,9 @@ export default function MobileProfileDetailPage() {
           </div>
         )}
 
-        {actionMessage && <p className="mobileFormMessage">{actionMessage}</p>}
-      </section>
+          {actionMessage && <p className="mobileFormMessage">{actionMessage}</p>}
+        </section>
+      )}
 
       <section className="mobileCardList">
         <p className="mobileCapsLabel">{t.memories}</p>
@@ -723,7 +761,9 @@ export default function MobileProfileDetailPage() {
         {memories.length === 0 ? (
           <div className="mobileEmptyCard">
             <p>{t.empty}</p>
-            <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileRecorderPrimary">{t.upload}</Link>
+            {canUploadToVault && (
+              <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileRecorderPrimary">{t.upload}</Link>
+            )}
           </div>
         ) : (
           memories.map((memory) => {

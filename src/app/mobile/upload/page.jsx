@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, FileUp, ImagePlus, UploadCloud } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
-import { saveMobileMemoryToV2 } from "../../../lib/mobileVault";
+import { getVaultAccess, loadAccessibleVaults, saveMobileMemoryToV2 } from "../../../lib/mobileVault";
 
 const copy = {
   en: {
@@ -189,15 +189,30 @@ export default function MobileUploadPage() {
     const queryAlbumId = queryParams?.get("albumId") || queryParams?.get("collectionId") || "";
     setSelectedAlbumId(queryAlbumId);
 
-    const { data } = await supabase
-      .from("vaults")
-      .select("id, network_id, title, subject_name, relationship_label, description")
-      .order("created_at", { ascending: false });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const rows = data || [];
+    if (!user?.id) {
+      setVaults([]);
+      return;
+    }
+
+    const accessibleVaults = await loadAccessibleVaults(
+      supabase,
+      user,
+      "id, network_id, created_by, title, subject_name, relationship_label, description, created_at"
+    );
+    const rowsWithAccess = await Promise.all(
+      accessibleVaults.map(async (vault) => ({
+        ...vault,
+        access: await getVaultAccess(supabase, user, vault),
+      }))
+    );
+    const rows = rowsWithAccess.filter((vault) => vault.access.canUpload);
     setVaults(rows);
 
-    if (queryVaultId) {
+    if (queryVaultId && rows.some((vault) => vault.id === queryVaultId)) {
       setSelectedVaultId(queryVaultId);
     } else if (rows.length > 0) {
       setSelectedVaultId(rows[0].id);

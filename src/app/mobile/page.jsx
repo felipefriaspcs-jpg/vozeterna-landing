@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
+import { countAccessibleVaults } from "../../lib/mobileVault";
 import {
   getInitialMobileLanguage,
   setStoredMobileLanguage,
@@ -189,7 +190,7 @@ export default function MobileDashboardPage() {
         consentResult,
         storageResult,
       ] = await Promise.all([
-        supabase.from("vaults").select("id", { count: "exact", head: true }),
+        countAccessibleVaults(supabase, currentUser),
         supabase.from("memories").select("id", { count: "exact", head: true }),
         supabase.from("memory_collections").select("id", { count: "exact", head: true }),
         supabase.from("consent_records").select("id", { count: "exact", head: true }),
@@ -201,7 +202,7 @@ export default function MobileDashboardPage() {
       }, 0);
 
       setStats({
-        profiles: profilesResult.count || 0,
+        profiles: profilesResult || 0,
         memories: memoriesResult.count || 0,
         publicPages: 0,
         albums: albumsResult.count || 0,

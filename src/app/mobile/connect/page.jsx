@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { Check, Copy, QrCode, Share2, UsersRound } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../../../lib/supabaseClient";
-import { ensureNetworkAndVaultByType, isNetworkMember, loadExistingNetwork } from "../../../lib/mobileVault";
+import {
+  ensureNetworkAndVaultByType,
+  getNetworkAccess,
+  getVaultAccess,
+  loadExistingNetwork,
+} from "../../../lib/mobileVault";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
 
 const copy = {
@@ -24,6 +29,7 @@ const copy = {
     share: "Share invite",
     copied: "Invite link copied.",
     signIn: "Please sign in before creating an invite.",
+    inviteDenied: "Only the vault owner or an admin can invite people to this vault.",
   },
   es: {
     label: "Conectar",
@@ -41,6 +47,7 @@ const copy = {
     share: "Compartir invitación",
     copied: "Enlace copiado.",
     signIn: "Inicia sesión antes de crear una invitación.",
+    inviteDenied: "Solo el dueno de la boveda o un administrador puede invitar personas a esta boveda.",
   },
 };
 
@@ -98,7 +105,7 @@ export default function MobileConnectPage() {
       if (requestedVaultId) {
         const { data: targetVault, error: targetVaultError } = await supabase
           .from("vaults")
-          .select("id, network_id")
+          .select("id, network_id, created_by")
           .eq("id", requestedVaultId)
           .maybeSingle();
 
@@ -107,6 +114,11 @@ export default function MobileConnectPage() {
         }
 
         networkId = targetVault?.network_id || "";
+
+        const access = await getVaultAccess(supabase, user, targetVault);
+        if (!access.canManage) {
+          throw new Error(t.inviteDenied);
+        }
       }
 
       if (!networkId && requestedNetworkId) {
@@ -115,10 +127,10 @@ export default function MobileConnectPage() {
 
       if (networkId) {
         const existingNetwork = await loadExistingNetwork(supabase, networkId);
-        const member = await isNetworkMember(supabase, user, networkId);
+        const access = await getNetworkAccess(supabase, user, networkId);
 
-        if (!existingNetwork?.id || !member) {
-          throw new Error("You do not have access to create an invite for this vault.");
+        if (!existingNetwork?.id || !access.canManage) {
+          throw new Error(t.inviteDenied);
         }
       } else {
         const ensured = await ensureNetworkAndVaultByType(
@@ -127,6 +139,11 @@ export default function MobileConnectPage() {
           selectedNetworkType
         );
         networkId = ensured.networkId;
+
+        const access = await getNetworkAccess(supabase, user, networkId);
+        if (!access.canManage) {
+          throw new Error(t.inviteDenied);
+        }
       }
 
       const { data, error } = await supabase.rpc("create_sharable_link", {

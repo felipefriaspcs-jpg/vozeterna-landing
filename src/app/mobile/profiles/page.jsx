@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, QrCode, UserRound } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
+import { getVaultAccess, loadAccessibleVaults } from "../../../lib/mobileVault";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
 
 const copy = {
@@ -81,71 +82,25 @@ export default function MobileProfilesPage() {
       return;
     }
 
-    const { data: ownedVaults, error } = await supabase
-      .from("vaults")
-      .select("id, network_id, title, subject_name, relationship_label, description, created_at")
-      .eq("created_by", user.id)
-      .order("created_at", { ascending: false });
+    try {
+      const accessibleVaults = await loadAccessibleVaults(
+        supabase,
+        user,
+        "id, network_id, created_by, title, subject_name, relationship_label, description, created_at"
+      );
+      const vaultsWithAccess = await Promise.all(
+        accessibleVaults.map(async (vault) => ({
+          ...vault,
+          access: await getVaultAccess(supabase, user, vault),
+        }))
+      );
 
-    if (error) {
+      setVaults(vaultsWithAccess);
+    } catch (error) {
       console.error("Mobile profiles error:", error.message);
       setVaults([]);
-      setLoading(false);
-      return;
     }
 
-    const { data: membershipRows } = await supabase
-      .from("vault_memberships")
-      .select("vault_id")
-      .eq("user_id", user.id);
-
-    const memberVaultIds = [
-      ...new Set((membershipRows || []).map((row) => row.vault_id).filter(Boolean)),
-    ];
-    let memberVaults = [];
-
-    if (memberVaultIds.length > 0) {
-      const { data: sharedVaultRows } = await supabase
-        .from("vaults")
-        .select("id, network_id, title, subject_name, relationship_label, description, created_at")
-        .in("id", memberVaultIds)
-        .order("created_at", { ascending: false });
-
-      memberVaults = sharedVaultRows || [];
-    }
-
-    const vaultMap = new Map();
-
-    const { data: networkMembershipRows } = await supabase
-      .from("network_members")
-      .select("network_id")
-      .eq("user_id", user.id)
-      .not("accepted_at", "is", null);
-
-    const networkIds = [
-      ...new Set((networkMembershipRows || []).map((row) => row.network_id).filter(Boolean)),
-    ];
-    let networkVaults = [];
-
-    if (networkIds.length > 0) {
-      const { data: networkVaultRows } = await supabase
-        .from("vaults")
-        .select("id, network_id, title, subject_name, relationship_label, description, created_at")
-        .in("network_id", networkIds)
-        .order("created_at", { ascending: false });
-
-      networkVaults = networkVaultRows || [];
-    }
-
-    [...(ownedVaults || []), ...memberVaults, ...networkVaults].forEach((vault) => {
-      if (vault?.id) vaultMap.set(vault.id, vault);
-    });
-
-    setVaults(
-      [...vaultMap.values()].sort(
-        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-      )
-    );
     setLoading(false);
   }
 
@@ -195,17 +150,19 @@ export default function MobileProfilesPage() {
             <span>{vault.relationship_label || t.familyVault}</span>
             <p>{vault.description || t.privateArchive}</p>
 
-            <span
-              className="mobileMiniAction"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                window.location.href = `/mobile/connect?networkId=${vault.network_id}&vaultId=${vault.id}`;
-              }}
-            >
-              <QrCode size={15} />
-              {t.qr}
-            </span>
+            {vault.access?.canManage && (
+              <span
+                className="mobileMiniAction"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  window.location.href = `/mobile/connect?networkId=${vault.network_id}&vaultId=${vault.id}`;
+                }}
+              >
+                <QrCode size={15} />
+                {t.qr}
+              </span>
+            )}
           </Link>
         ))}
       </section>

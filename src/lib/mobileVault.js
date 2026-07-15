@@ -10,6 +10,192 @@ export function getSafeFileName(name = "memory") {
   return String(name || "memory").replace(/[^a-zA-Z0-9.\-_]/g, "-");
 }
 
+const MANAGE_ROLES = ["owner", "admin", "manager"];
+const UPLOAD_ROLES = [...MANAGE_ROLES, "contributor"];
+
+function normalizeRole(role = "") {
+  return String(role || "").toLowerCase();
+}
+
+export function canManageRole(role) {
+  return MANAGE_ROLES.includes(normalizeRole(role));
+}
+
+export function canUploadRole(role) {
+  return UPLOAD_ROLES.includes(normalizeRole(role));
+}
+
+export async function getVaultAccess(supabase, user, vaultDataOrId) {
+  if (!user?.id || !vaultDataOrId) {
+    return { canView: false, canManage: false, canUpload: false, role: "" };
+  }
+
+  const vaultData =
+    typeof vaultDataOrId === "string"
+      ? (
+          await supabase
+            .from("vaults")
+            .select("id, network_id, created_by")
+            .eq("id", vaultDataOrId)
+            .maybeSingle()
+        ).data
+      : vaultDataOrId;
+
+  if (!vaultData?.id) {
+    return { canView: false, canManage: false, canUpload: false, role: "" };
+  }
+
+  if (vaultData.created_by === user.id) {
+    return { canView: true, canManage: true, canUpload: true, role: "owner" };
+  }
+
+  const { data: vaultMember } = await supabase
+    .from("vault_memberships")
+    .select("role")
+    .eq("vault_id", vaultData.id)
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (vaultMember) {
+    const role = normalizeRole(vaultMember.role || "viewer");
+    return {
+      canView: true,
+      canManage: canManageRole(role),
+      canUpload: canUploadRole(role),
+      role,
+    };
+  }
+
+  if (!vaultData.network_id) {
+    return { canView: false, canManage: false, canUpload: false, role: "" };
+  }
+
+  const { data: networkMember } = await supabase
+    .from("network_members")
+    .select("role")
+    .eq("network_id", vaultData.network_id)
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!networkMember) {
+    return { canView: false, canManage: false, canUpload: false, role: "" };
+  }
+
+  const role = normalizeRole(networkMember.role || "viewer");
+  return {
+    canView: true,
+    canManage: canManageRole(role),
+    canUpload: canUploadRole(role),
+    role,
+  };
+}
+
+export async function getNetworkAccess(supabase, user, networkId) {
+  if (!user?.id || !networkId) {
+    return { canView: false, canManage: false, canUpload: false, role: "" };
+  }
+
+  const { data: member } = await supabase
+    .from("network_members")
+    .select("role")
+    .eq("network_id", networkId)
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!member) {
+    return { canView: false, canManage: false, canUpload: false, role: "" };
+  }
+
+  const role = normalizeRole(member.role || "viewer");
+  return {
+    canView: true,
+    canManage: canManageRole(role),
+    canUpload: canUploadRole(role),
+    role,
+  };
+}
+
+export async function loadAccessibleVaults(supabase, user, selectColumns) {
+  if (!user?.id) return [];
+
+  const columns =
+    selectColumns ||
+    "id, network_id, created_by, title, subject_name, relationship_label, description, created_at";
+
+  const [ownedResult, vaultMembershipsResult, networkMembershipsResult] = await Promise.all([
+    supabase
+      .from("vaults")
+      .select(columns)
+      .eq("created_by", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("vault_memberships")
+      .select("vault_id")
+      .eq("user_id", user.id),
+    supabase
+      .from("network_members")
+      .select("network_id")
+      .eq("user_id", user.id),
+  ]);
+
+  if (ownedResult.error) {
+    throw new Error(ownedResult.error.message);
+  }
+
+  const memberVaultIds = [
+    ...new Set((vaultMembershipsResult.data || []).map((row) => row.vault_id).filter(Boolean)),
+  ];
+  const networkIds = [
+    ...new Set((networkMembershipsResult.data || []).map((row) => row.network_id).filter(Boolean)),
+  ];
+
+  const [memberVaultsResult, networkVaultsResult] = await Promise.all([
+    memberVaultIds.length > 0
+      ? supabase
+          .from("vaults")
+          .select(columns)
+          .in("id", memberVaultIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    networkIds.length > 0
+      ? supabase
+          .from("vaults")
+          .select(columns)
+          .in("network_id", networkIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  if (memberVaultsResult.error) {
+    throw new Error(memberVaultsResult.error.message);
+  }
+
+  if (networkVaultsResult.error) {
+    throw new Error(networkVaultsResult.error.message);
+  }
+
+  const vaultMap = new Map();
+  [
+    ...(ownedResult.data || []),
+    ...(memberVaultsResult.data || []),
+    ...(networkVaultsResult.data || []),
+  ].forEach((vault) => {
+    if (vault?.id) vaultMap.set(vault.id, vault);
+  });
+
+  return [...vaultMap.values()].sort(
+    (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+  );
+}
+
+export async function countAccessibleVaults(supabase, user) {
+  const vaults = await loadAccessibleVaults(supabase, user, "id, created_at");
+  return vaults.length;
+}
+
 function networkLabels(networkType = "family") {
   if (networkType === "friend") {
     return {
@@ -97,6 +283,7 @@ export async function ensureNetworkAndVaultByType(supabase, user, networkType = 
     .from("network_members")
     .select("network_id")
     .eq("user_id", user.id)
+    .in("role", MANAGE_ROLES)
     .not("accepted_at", "is", null);
 
   const membershipIds = (membershipsResult.data || []).map((item) => item.network_id);
@@ -227,6 +414,11 @@ export async function resolveTargetVault({
     }
 
     if (data?.id && data?.network_id) {
+      const access = await getVaultAccess(supabase, user, data);
+      if (!access.canUpload) {
+        throw new Error("You do not have permission to upload to this vault.");
+      }
+
       const usableNetwork = await ensureUsableNetworkForUser({
         supabase,
         user,
