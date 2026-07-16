@@ -471,6 +471,10 @@ export default function MobileProfileDetailPage() {
     setVaultVisualState("opening");
     window.setTimeout(() => {
       setVaultVisualState("success");
+      document.getElementById("vault-contents")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
       window.setTimeout(() => setVaultVisualState("idle"), 900);
     }, 650);
   }
@@ -871,7 +875,7 @@ export default function MobileProfileDetailPage() {
         </section>
       )}
 
-      <section className="mobileCardList">
+      <section className="mobileCardList" id="vault-contents">
         <p className="mobileCapsLabel">{t.memories}</p>
 
         {memories.length === 0 ? (

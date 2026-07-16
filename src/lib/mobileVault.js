@@ -233,13 +233,13 @@ export async function countAccessibleVaults(supabase, user) {
 function networkLabels(networkType = "family") {
   if (networkType === "friend") {
     return {
-      networkDescription: "Private friend network created from the mobile app.",
+      networkDescription: "Private network created from an explicit vault request.",
       relationship: "Friends",
     };
   }
 
   return {
-    networkDescription: "Private family network created from the mobile app.",
+    networkDescription: "Private network created from an explicit vault request.",
     relationship: "Family",
   };
 }
@@ -291,22 +291,6 @@ async function ensureUsableNetworkForUser({
   throw new Error("You do not have permission to use this vault network.");
 }
 
-export async function ensureNetworkAndVaultByType(supabase, user, networkType = "family") {
-  if (!user?.id) {
-    throw new Error("Please sign in first.");
-  }
-
-  throw new Error("Automatic default vault creation is disabled. Create a vault explicitly first.");
-}
-
-export async function ensureDefaultNetworkAndVault(supabase, user) {
-  if (!user?.id) {
-    throw new Error("Please sign in first.");
-  }
-
-  throw new Error("Automatic default vault creation is disabled. Create a vault explicitly first.");
-}
-
 export async function resolveTargetVault({
   supabase,
   user,
@@ -336,15 +320,6 @@ export async function resolveTargetVault({
         networkId: data.network_id,
         networkType,
       });
-
-      if (usableNetwork.usedFallback) {
-        return {
-          networkId: usableNetwork.networkId,
-          vaultId: usableNetwork.vaultId,
-          vault: null,
-          usedFallback: true,
-        };
-      }
 
       return {
         networkId: usableNetwork.networkId,

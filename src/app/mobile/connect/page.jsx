@@ -250,19 +250,19 @@ export default function MobileConnectPage() {
       return { user, networkId };
     }
 
-    const fallbackNetworkId = await findFirstManageableNetwork(supabase, user);
+    const manageableNetworkId = await findFirstManageableNetwork(supabase, user);
 
-    if (!fallbackNetworkId) {
+    if (!manageableNetworkId) {
       throw new Error(t.inviteDenied);
     }
 
-    const access = await getNetworkAccess(supabase, user, fallbackNetworkId);
+    const access = await getNetworkAccess(supabase, user, manageableNetworkId);
 
     if (!access.canManage) {
       throw new Error(t.inviteDenied);
     }
 
-    return { user, networkId: fallbackNetworkId };
+    return { user, networkId: manageableNetworkId };
   }
 
   async function createAccountInvite() {
