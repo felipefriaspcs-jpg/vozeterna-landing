@@ -10,6 +10,7 @@ import {
   FileText,
   FolderPlus,
   Image as ImageIcon,
+  LockKeyhole,
   Mic2,
   QrCode,
   Share2,
@@ -22,6 +23,7 @@ import { isMemoryOwner } from "../../../../lib/memoryPermissions";
 import { getVaultAccess } from "../../../../lib/mobileVault";
 import { cleanupUploadedFile } from "../../../../lib/storageCleanup";
 import { normalizeStoragePath, warnInvalidStoragePath } from "../../../../lib/storagePaths";
+import { getVaultSkin, normalizeVaultSkin, VAULT_SKIN_KEYS } from "../../../../lib/vaultSkins";
 import { getInitialMobileLanguage } from "../../../../components/mobile/mobileLanguage";
 import ShareMemoryButton from "../../../../components/social/ShareMemoryButton";
 import MobileMemoryActions from "../../../../components/mobile/MobileMemoryActions";
@@ -54,6 +56,12 @@ const copy = {
     savingPhoto: "Saving photo...",
     photoSaved: "Vault photo updated.",
     photoOwnerOnly: "Only the vault owner can update this photo.",
+    openVault: "Open vault",
+    openingVault: "Opening...",
+    vaultOpened: "Vault opened",
+    vaultStyle: "Vault style",
+    styleSaved: "Vault style updated.",
+    styleSaveFailed: "Could not update vault style.",
     publicPage: "Public page",
     enablePublic: "Enable public page",
     disablePublic: "Disable public page",
@@ -114,6 +122,12 @@ const copy = {
     savingPhoto: "Guardando foto...",
     photoSaved: "Foto de la boveda actualizada.",
     photoOwnerOnly: "Solo el dueno de la boveda puede actualizar esta foto.",
+    openVault: "Abrir boveda",
+    openingVault: "Abriendo...",
+    vaultOpened: "Boveda abierta",
+    vaultStyle: "Estilo de boveda",
+    styleSaved: "Estilo de boveda actualizado.",
+    styleSaveFailed: "No se pudo actualizar el estilo de boveda.",
     publicPage: "Página pública",
     enablePublic: "Activar página pública",
     disablePublic: "Desactivar página pública",
@@ -178,6 +192,9 @@ export default function MobileProfileDetailPage() {
   const [canUpdatePhoto, setCanUpdatePhoto] = useState(false);
   const [canManageVault, setCanManageVault] = useState(false);
   const [canUploadToVault, setCanUploadToVault] = useState(false);
+  const [vaultVisualState, setVaultVisualState] = useState("idle");
+  const [skinSaving, setSkinSaving] = useState(false);
+  const [skinMessage, setSkinMessage] = useState("");
 
   const t = copy[language] || copy.en;
   const canCurrentUserUpdatePhoto = canUpdatePhoto || isVaultCreatedByUser(vault, currentUserId);
@@ -273,7 +290,7 @@ export default function MobileProfileDetailPage() {
 
     const { data: vaultData, error: vaultError } = await supabase
       .from("vaults")
-      .select("id, network_id, created_by, title, subject_name, relationship_label, description, cover_image_path, public_enabled, public_slug, public_title, public_description, created_at")
+      .select("id, network_id, created_by, title, subject_name, relationship_label, description, cover_image_path, vault_skin, public_enabled, public_slug, public_title, public_description, created_at")
       .eq("id", id)
       .maybeSingle();
 
@@ -447,6 +464,50 @@ export default function MobileProfileDetailPage() {
       if (photoInputRef.current) {
         photoInputRef.current.value = "";
       }
+    }
+  }
+
+  function previewOpenVault() {
+    setVaultVisualState("opening");
+    window.setTimeout(() => {
+      setVaultVisualState("success");
+      window.setTimeout(() => setVaultVisualState("idle"), 900);
+    }, 650);
+  }
+
+  async function updateVaultSkin(nextSkin) {
+    const safeSkin = normalizeVaultSkin(nextSkin);
+    if (!vault?.id || safeSkin === normalizeVaultSkin(vault.vault_skin)) return;
+
+    setSkinSaving(true);
+    setSkinMessage("");
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) throw new Error("Please sign in first.");
+
+      const access = await getVaultAccess(supabase, user, vault);
+      if (!access.canManage) throw new Error(t.styleSaveFailed);
+
+      const { error } = await supabase
+        .from("vaults")
+        .update({
+          vault_skin: safeSkin,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", vault.id);
+
+      if (error) throw new Error(error.message);
+
+      setVault((current) => ({ ...(current || vault), vault_skin: safeSkin }));
+      setSkinMessage(t.styleSaved);
+    } catch (error) {
+      setSkinMessage(error.message || t.styleSaveFailed);
+    } finally {
+      setSkinSaving(false);
     }
   }
 
@@ -663,18 +724,38 @@ export default function MobileProfileDetailPage() {
     );
   }
 
+  const skinKey = normalizeVaultSkin(vault.vault_skin);
+  const skin = getVaultSkin(skinKey);
+
   return (
     <section className="mobileScreenStack">
-      <div className="mobileScreenHero mobileProfileHero">
+      <div className={`mobileScreenHero mobileProfileHero mobileVaultDetailHero state-${vaultVisualState}`}>
+        <div className="mobileVaultSkinStage">
+          <img src={skin.image} alt="" className="mobileVaultSkinStageImage" />
+          <span className="mobileVaultSkinStageShade" />
+          <div className="mobileVaultEngravedLabel">
+            <span>{skin.label[language]}</span>
+            <strong>{vault.subject_name || vault.title}</strong>
+          </div>
+          <button type="button" className="mobileVaultOpenButton" onClick={previewOpenVault}>
+            <LockKeyhole size={16} />
+            {vaultVisualState === "opening"
+              ? t.openingVault
+              : vaultVisualState === "success"
+                ? t.vaultOpened
+                : t.openVault}
+          </button>
+        </div>
+
+        <p className="mobileCapsLabel">{t.label}</p>
+        <h1>{vault.subject_name || vault.title}</h1>
+        <p>{vault.description || t.privateArchive}</p>
+
         {coverUrl ? (
           <img src={coverUrl} alt={vault.subject_name || vault.title} className="mobileProfileCover" />
         ) : (
           <div className="mobileProfileCoverPlaceholder"><Camera size={30} /></div>
         )}
-
-        <p className="mobileCapsLabel">{t.label}</p>
-        <h1>{vault.subject_name || vault.title}</h1>
-        <p>{vault.description || t.privateArchive}</p>
 
         {canCurrentUserUpdatePhoto ? (
           <button type="button" className="mobilePhotoButton" onClick={() => photoInputRef.current?.click()} disabled={photoSaving}>
@@ -688,6 +769,32 @@ export default function MobileProfileDetailPage() {
         <input ref={photoInputRef} type="file" hidden accept="image/*" onChange={updateProfilePhoto} />
         {photoMessage && <p className="mobileFormMessage">{photoMessage}</p>}
       </div>
+
+      {canManageVault && (
+        <section className="mobileFormCard mobileVaultSkinSelector">
+          <p className="mobileCapsLabel">{t.vaultStyle}</p>
+          <div className="mobileVaultSkinOptions">
+            {VAULT_SKIN_KEYS.map((key) => {
+              const option = getVaultSkin(key);
+              const selected = key === skinKey;
+
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  className={selected ? "active" : ""}
+                  onClick={() => updateVaultSkin(key)}
+                  disabled={skinSaving}
+                >
+                  <img src={option.image} alt="" />
+                  <span>{option.label[language]}</span>
+                </button>
+              );
+            })}
+          </div>
+          {skinMessage && <p className="mobileFormMessage">{skinMessage}</p>}
+        </section>
+      )}
 
       {(canUploadToVault || canManageVault) && (
         <section className="mobileActionGrid">

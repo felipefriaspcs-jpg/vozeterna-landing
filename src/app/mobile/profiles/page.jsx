@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, QrCode, UserRound } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getVaultAccess, loadAccessibleVaults } from "../../../lib/mobileVault";
+import { getVaultSkin, normalizeVaultSkin } from "../../../lib/vaultSkins";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
 
 const copy = {
@@ -23,6 +24,7 @@ const copy = {
     familyVault: "Family vault",
     privateArchive: "Private family archive.",
     qr: "QR invite",
+    skin: "Vault style",
   },
   es: {
     label: "Bovedas",
@@ -39,6 +41,7 @@ const copy = {
     familyVault: "Boveda familiar",
     privateArchive: "Archivo familiar privado.",
     qr: "Invitar QR",
+    skin: "Estilo de boveda",
   },
 };
 
@@ -87,7 +90,7 @@ export default function MobileProfilesPage() {
       const accessibleVaults = await loadAccessibleVaults(
         supabase,
         user,
-        "id, network_id, created_by, title, subject_name, relationship_label, description, created_at"
+        "id, network_id, created_by, title, subject_name, relationship_label, description, vault_skin, created_at"
       );
       const vaultsWithAccess = await Promise.all(
         accessibleVaults.map(async (vault) => ({
@@ -143,31 +146,43 @@ export default function MobileProfilesPage() {
           </div>
         )}
 
-        {vaults.map((vault) => (
-          <Link
-            href={`/mobile/profiles/${vault.id}`}
-            className="mobileListCard"
-            key={vault.id}
-          >
-            <strong>{vault.subject_name || vault.title}</strong>
-            <span>{vault.relationship_label || t.familyVault}</span>
-            <p>{vault.description || t.privateArchive}</p>
+        {vaults.map((vault) => {
+          const skinKey = normalizeVaultSkin(vault.vault_skin);
+          const skin = getVaultSkin(skinKey);
 
-            {vault.access?.canManage && (
-              <span
-                className="mobileMiniAction"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  window.location.href = `/mobile/connect?networkId=${vault.network_id}&vaultId=${vault.id}`;
-                }}
-              >
-                <QrCode size={15} />
-                {t.qr}
+          return (
+            <Link
+              href={`/mobile/profiles/${vault.id}`}
+              className={`mobileListCard mobileVaultSkinCard skin-${skinKey}`}
+              key={vault.id}
+            >
+              <img src={skin.image} alt="" className="mobileVaultSkinCardImage" />
+              <span className="mobileVaultSkinShade" />
+
+              <span className="mobileVaultSkinBadge">
+                {t.skin}: {skin.label[language]}
               </span>
-            )}
-          </Link>
-        ))}
+
+              <strong>{vault.subject_name || vault.title}</strong>
+              <span>{vault.relationship_label || t.familyVault}</span>
+              <p>{vault.description || t.privateArchive}</p>
+
+              {vault.access?.canManage && (
+                <span
+                  className="mobileMiniAction mobileVaultSkinInvite"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    window.location.href = `/mobile/connect?networkId=${vault.network_id}&vaultId=${vault.id}`;
+                  }}
+                >
+                  <QrCode size={15} />
+                  {t.qr}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </section>
     </section>
   );
