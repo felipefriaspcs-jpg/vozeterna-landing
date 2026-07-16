@@ -65,13 +65,16 @@ const copy = {
     openVault: "Open vault",
     unlockVault: "Unlock Vault",
     enterVault: "Enter Vault",
+    unlockInstruction: "Enter your vault passcode to continue.",
+    passcodePlaceholder: "Vault passcode",
+    unlockButton: "Unlock",
+    privacyNote: "This unlock step is a private MVP entry gate for this vault.",
     openingVault: "Opening...",
     vaultOpened: "Vault opened",
-    incorrectUnlock: "Incorrect unlock attempt. Please try again.",
+    incorrectUnlock: "Incorrect passcode. Please try again.",
     lockedOut: "Too many unlock attempts. Please verify your identity to continue.",
     verifyEmail: "Verify by email",
     tryLater: "Try again later",
-    demoWrongCode: "Demo wrong code",
     vaultStyle: "Vault style",
     styleSaved: "Vault style updated.",
     styleSaveFailed: "Could not update vault style.",
@@ -138,13 +141,16 @@ const copy = {
     openVault: "Abrir boveda",
     unlockVault: "Desbloquear boveda",
     enterVault: "Entrar a la boveda",
+    unlockInstruction: "Ingresa el codigo de la boveda para continuar.",
+    passcodePlaceholder: "Codigo de la boveda",
+    unlockButton: "Desbloquear",
+    privacyNote: "Este desbloqueo es una entrada privada MVP para esta boveda.",
     openingVault: "Abriendo...",
     vaultOpened: "Boveda abierta",
-    incorrectUnlock: "Intento de desbloqueo incorrecto. Intentalo de nuevo.",
+    incorrectUnlock: "Codigo incorrecto. Intentalo de nuevo.",
     lockedOut: "Demasiados intentos de desbloqueo. Verifica tu identidad para continuar.",
     verifyEmail: "Verificar por correo",
     tryLater: "Intentar mas tarde",
-    demoWrongCode: "Demo codigo incorrecto",
     vaultStyle: "Estilo de boveda",
     styleSaved: "Estilo de boveda actualizado.",
     styleSaveFailed: "No se pudo actualizar el estilo de boveda.",
@@ -212,8 +218,8 @@ export default function MobileProfileDetailPage() {
   const [canUpdatePhoto, setCanUpdatePhoto] = useState(false);
   const [canManageVault, setCanManageVault] = useState(false);
   const [canUploadToVault, setCanUploadToVault] = useState(false);
-  const [vaultVisualState, setVaultVisualState] = useState("idle");
-  const [vaultMediaState, setVaultMediaState] = useState("idle");
+  const [unlockState, setUnlockState] = useState("locked");
+  const [passcode, setPasscode] = useState("");
   const [unlockMessage, setUnlockMessage] = useState("");
   const [failedUnlockAttempts, setFailedUnlockAttempts] = useState(0);
   const [skinSaving, setSkinSaving] = useState(false);
@@ -490,67 +496,66 @@ export default function MobileProfileDetailPage() {
     }
   }
 
-  function previewOpenVault() {
-    const openVideo = getVaultSkinVideo(vault?.vault_skin, "opening");
+  function verifyVaultPasscode(candidatePasscode) {
+    // TODO: Replace this MVP-only demo check with server-side hashed vault passcode verification.
+    // Real vault passcodes should be hashed server-side. Do not store raw passcodes.
+    // Do not rely on frontend-only checks for production security.
+    // WebAuthn/passkeys can be added later for real biometric or device unlock.
+    return candidatePasscode === "1234";
+  }
 
-    setVaultVisualState("opening");
-    setVaultMediaState("opening");
+  function handleUnlockSubmit(event) {
+    event.preventDefault();
+
+    if (unlockState === "opening" || unlockState === "lockedOut") return;
+
     setUnlockMessage("");
 
-    if (openVideo) {
+    if (verifyVaultPasscode(passcode.trim())) {
+      const openVideo = getVaultSkinVideo(vault?.vault_skin, "opening");
+      setUnlockState("opening");
+
+      if (!openVideo) {
+        revealVaultContents();
+      }
       return;
     }
 
-    revealVaultContents();
-  }
-
-  function previewWrongCode() {
     const nextFailedAttempts = failedUnlockAttempts + 1;
     const nextState = nextFailedAttempts >= 3 ? "lockedOut" : "wrongCode";
     const wrongVideo = getVaultSkinVideo(vault?.vault_skin, nextState);
 
     setFailedUnlockAttempts(nextFailedAttempts);
-    setVaultVisualState(nextState === "lockedOut" ? "locked" : "warning");
-    setVaultMediaState(nextState);
+    setUnlockState(nextState);
     setUnlockMessage(nextState === "lockedOut" ? t.lockedOut : t.incorrectUnlock);
 
-    if (wrongVideo) {
-      return;
-    }
-
-    setVaultMediaState("idle");
+    if (!wrongVideo) setUnlockState(nextState === "lockedOut" ? "lockedOut" : "locked");
   }
 
   function revealVaultContents() {
-    setVaultMediaState("idle");
+    setUnlockState("unlocked");
     setUnlockMessage("");
     setFailedUnlockAttempts(0);
-    setVaultVisualState("success");
-    document.getElementById("vault-contents")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-    window.setTimeout(() => setVaultVisualState("idle"), 900);
+    setPasscode("");
   }
 
   function resetVaultStage() {
-    setVaultMediaState("idle");
-    if (vaultVisualState !== "locked") {
-      setVaultVisualState("idle");
-    }
+    setUnlockState((current) => (current === "lockedOut" ? "lockedOut" : "locked"));
   }
 
   function handleVaultAnimationEnded() {
-    if (vaultMediaState === "opening") {
+    if (unlockState === "opening") {
       revealVaultContents();
       return;
     }
 
-    resetVaultStage();
+    if (unlockState === "wrongCode") {
+      setUnlockState("locked");
+    }
   }
 
   function handleVaultAnimationError() {
-    if (vaultMediaState === "opening") {
+    if (unlockState === "opening") {
       revealVaultContents();
       return;
     }
@@ -561,8 +566,8 @@ export default function MobileProfileDetailPage() {
   function clearSoftLockout() {
     setFailedUnlockAttempts(0);
     setUnlockMessage("");
-    setVaultVisualState("idle");
-    setVaultMediaState("idle");
+    setUnlockState("locked");
+    setPasscode("");
   }
 
   async function updateVaultSkin(nextSkin) {
@@ -817,99 +822,117 @@ export default function MobileProfileDetailPage() {
   const skinKey = normalizeVaultSkin(vault.vault_skin);
   const skin = getVaultSkin(skinKey);
   const vaultImageSrc = getVaultSkinImage(skinKey);
-  const vaultVideoSrc = vaultMediaState === "idle" ? "" : getVaultSkinVideo(skinKey, vaultMediaState);
-  const isVaultVideoPlaying = vaultMediaState !== "idle" && Boolean(vaultVideoSrc);
-  const isSoftLockedOut = failedUnlockAttempts >= 3 || vaultVisualState === "locked";
+  const vaultVideoSrc = unlockState === "locked" || unlockState === "unlocked" ? "" : getVaultSkinVideo(skinKey, unlockState);
+  const isVaultVideoPlaying = unlockState !== "locked" && unlockState !== "unlocked" && Boolean(vaultVideoSrc);
+  const isSoftLockedOut = unlockState === "lockedOut";
 
   return (
     <section className="mobileScreenStack">
-      <div className={`mobileScreenHero mobileProfileHero mobileVaultDetailHero state-${vaultVisualState}`}>
-        <div className="mobileVaultSkinStage vaultSkinFrame">
-          {isVaultVideoPlaying && vaultVideoSrc ? (
-            <video
-              key={`${skinKey}-${vaultMediaState}`}
-              src={vaultVideoSrc}
-              className="mobileVaultSkinStageImage vaultSkinMedia vaultSkinVideo"
-              autoPlay
-              muted
-              playsInline
-              preload="metadata"
-              onEnded={handleVaultAnimationEnded}
-              onError={handleVaultAnimationError}
-            />
-          ) : (
-            <img
-              src={vaultImageSrc}
-              alt=""
-              className="mobileVaultSkinStageImage vaultSkinMedia"
-              onError={(event) => {
-                const fallbackSrc = getVaultSkinImage("steel");
-                if (!event.currentTarget.src.endsWith(fallbackSrc)) {
-                  event.currentTarget.src = fallbackSrc;
-                }
-              }}
-            />
-          )}
-          <span className="mobileVaultSkinStageShade" />
-          <div className="mobileVaultEngravedLabel">
-            <span>{skin.label[language]}</span>
-            <strong>{vault.subject_name || vault.title}</strong>
-          </div>
-          {!isVaultVideoPlaying && !isSoftLockedOut && (
-            <button type="button" className="mobileVaultOpenButton" onClick={previewOpenVault}>
-              <LockKeyhole size={16} />
-              {vaultVisualState === "opening"
-                ? t.openingVault
-                : vaultVisualState === "success"
-                  ? t.vaultOpened
-                  : t.unlockVault}
-            </button>
-          )}
-          {unlockMessage && (
-            <div className="vaultUnlockOverlay">
-              <p className="vaultUnlockMessage">{unlockMessage}</p>
-              {isSoftLockedOut && (
-                <div className="vaultUnlockActions">
-                  <button type="button" onClick={clearSoftLockout}>
-                    {t.verifyEmail}
-                  </button>
-                  <button type="button" onClick={clearSoftLockout}>
-                    {t.tryLater}
-                  </button>
+      {unlockState !== "unlocked" ? (
+        <section className={`vaultUnlockGate state-${unlockState}`}>
+          <div className="vaultUnlockCard">
+            <p className="mobileCapsLabel">{t.label}</p>
+            <h1>{t.unlockVault}</h1>
+            <p>{t.unlockInstruction}</p>
+
+            <div className="mobileVaultSkinStage vaultSkinFrame">
+              {isVaultVideoPlaying && vaultVideoSrc ? (
+                <video
+                  key={`${skinKey}-${unlockState}`}
+                  src={vaultVideoSrc}
+                  className="mobileVaultSkinStageImage vaultSkinMedia vaultSkinVideo"
+                  autoPlay
+                  muted
+                  playsInline
+                  preload="metadata"
+                  onEnded={handleVaultAnimationEnded}
+                  onError={handleVaultAnimationError}
+                />
+              ) : (
+                <img
+                  src={vaultImageSrc}
+                  alt=""
+                  className="mobileVaultSkinStageImage vaultSkinMedia"
+                  onError={(event) => {
+                    const fallbackSrc = getVaultSkinImage("steel");
+                    if (!event.currentTarget.src.endsWith(fallbackSrc)) {
+                      event.currentTarget.src = fallbackSrc;
+                    }
+                  }}
+                />
+              )}
+              <span className="mobileVaultSkinStageShade" />
+              <div className="mobileVaultEngravedLabel">
+                <span>{skin.label[language]}</span>
+                <strong>{vault.subject_name || vault.title}</strong>
+              </div>
+              {unlockMessage && (
+                <div className="vaultUnlockOverlay">
+                  <p className="vaultUnlockMessage">{unlockMessage}</p>
+                  {isSoftLockedOut && (
+                    <div className="vaultUnlockActions">
+                      <button type="button" onClick={clearSoftLockout}>
+                        {t.verifyEmail}
+                      </button>
+                      <button type="button" onClick={clearSoftLockout}>
+                        {t.tryLater}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        {!isVaultVideoPlaying && !isSoftLockedOut && (
-          <button type="button" className="mobileMiniAction" onClick={previewWrongCode}>
-            {t.demoWrongCode}
-          </button>
-        )}
+            {!isSoftLockedOut && (
+              <form className="vaultUnlockForm" onSubmit={handleUnlockSubmit}>
+                <input
+                  className="vaultUnlockInput"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={passcode}
+                  onChange={(event) => setPasscode(event.target.value)}
+                  placeholder={t.passcodePlaceholder}
+                  disabled={unlockState === "opening" || unlockState === "wrongCode"}
+                />
+                <button type="submit" disabled={unlockState === "opening" || unlockState === "wrongCode"}>
+                  <LockKeyhole size={16} />
+                  {unlockState === "opening" ? t.openingVault : t.unlockButton}
+                </button>
+              </form>
+            )}
 
-        <p className="mobileCapsLabel">{t.label}</p>
-        <h1>{vault.subject_name || vault.title}</h1>
-        <p>{vault.description || t.privateArchive}</p>
+            <p className="mobileFormHelper">{t.privacyNote}</p>
+            {process.env.NODE_ENV !== "production" && (
+              <p className="mobileFormHelper">Development demo passcode: 1234</p>
+            )}
+          </div>
+        </section>
+      ) : (
+        <div className="vaultUnlockedContent">
+          <div className="mobileScreenHero mobileProfileHero">
+            <p className="mobileCapsLabel">{t.label}</p>
+            <h1>{vault.subject_name || vault.title}</h1>
+            <p>{vault.description || t.privateArchive}</p>
 
-        {coverUrl ? (
-          <img src={coverUrl} alt={vault.subject_name || vault.title} className="mobileProfileCover" />
-        ) : (
-          <div className="mobileProfileCoverPlaceholder"><Camera size={30} /></div>
-        )}
+            {coverUrl ? (
+              <img src={coverUrl} alt={vault.subject_name || vault.title} className="mobileProfileCover" />
+            ) : (
+              <div className="mobileProfileCoverPlaceholder"><Camera size={30} /></div>
+            )}
 
-        {canCurrentUserUpdatePhoto ? (
-          <button type="button" className="mobilePhotoButton" onClick={() => photoInputRef.current?.click()} disabled={photoSaving}>
-            <Camera size={16} />
-            {photoSaving ? t.savingPhoto : t.updatePhoto}
-          </button>
-        ) : (
-          <p className="mobileFormHelper">{t.photoOwnerOnly}</p>
-        )}
+            {canCurrentUserUpdatePhoto ? (
+              <button type="button" className="mobilePhotoButton" onClick={() => photoInputRef.current?.click()} disabled={photoSaving}>
+                <Camera size={16} />
+                {photoSaving ? t.savingPhoto : t.updatePhoto}
+              </button>
+            ) : (
+              <p className="mobileFormHelper">{t.photoOwnerOnly}</p>
+            )}
 
-        <input ref={photoInputRef} type="file" hidden accept="image/*" onChange={updateProfilePhoto} />
-        {photoMessage && <p className="mobileFormMessage">{photoMessage}</p>}
-      </div>
+            <input ref={photoInputRef} type="file" hidden accept="image/*" onChange={updateProfilePhoto} />
+            {photoMessage && <p className="mobileFormMessage">{photoMessage}</p>}
+          </div>
 
       {canManageVault && (
         <section className="mobileFormCard mobileVaultSkinSelector">
@@ -1086,6 +1109,8 @@ export default function MobileProfileDetailPage() {
           })
         )}
       </section>
+        </div>
+      )}
     </section>
   );
 }

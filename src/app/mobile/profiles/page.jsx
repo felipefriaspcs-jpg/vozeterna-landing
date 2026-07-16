@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, QrCode, UserRound } from "lucide-react";
+import { LockKeyhole, Plus, QrCode, UserRound } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getVaultAccess, loadAccessibleVaults } from "../../../lib/mobileVault";
 import { getVaultSkin, getVaultSkinImage, normalizeVaultSkin } from "../../../lib/vaultSkins";
@@ -25,6 +25,7 @@ const copy = {
     privateArchive: "Private family archive.",
     qr: "QR invite",
     skin: "Vault style",
+    openVault: "Open Vault",
   },
   es: {
     label: "Bovedas",
@@ -42,6 +43,7 @@ const copy = {
     privateArchive: "Archivo familiar privado.",
     qr: "Invitar QR",
     skin: "Estilo de boveda",
+    openVault: "Abrir boveda",
   },
 };
 
@@ -181,6 +183,11 @@ export default function MobileProfilesPage() {
                   {t.qr}
                 </span>
               )}
+
+              <span className="mobileVaultOpenCardAction">
+                <LockKeyhole size={14} />
+                {t.openVault}
+              </span>
             </Link>
           );
         })}
