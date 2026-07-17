@@ -48,6 +48,9 @@ const copy = {
     chooseVault: "Choose or create a vault before saving.",
     ready: "Recording ready",
     recording: "Recording...",
+    vaultPrivateNote: "Saved only inside this vault unless you choose to share it.",
+    shareToFeed: "Share to family feed",
+    shareToFeedHelp: "Let members of this family network see this in the feed.",
   },
   es: {
     label: "Grabadora móvil",
@@ -79,6 +82,9 @@ const copy = {
     chooseVault: "Elige o crea una boveda antes de guardar.",
     ready: "Grabación lista",
     recording: "Grabando...",
+    vaultPrivateNote: "Se guardara solo dentro de esta boveda a menos que decidas compartirlo.",
+    shareToFeed: "Compartir en la red familiar",
+    shareToFeedHelp: "Permite que los miembros de esta red familiar lo vean en el feed.",
   },
 };
 
@@ -124,6 +130,7 @@ export default function MobileRecordPage() {
   const [script, setScript] = useState("");
   const [vaults, setVaults] = useState([]);
   const [selectedVaultId, setSelectedVaultId] = useState("");
+  const [shareToFeed, setShareToFeed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [previewActive, setPreviewActive] = useState(false);
 
@@ -374,6 +381,8 @@ export default function MobileRecordPage() {
         folder: recordingKind === "video" ? "mobile-videos" : "mobile-recordings",
         forcedType: recordingKind === "video" ? "video" : "audio",
         targetVaultId: selectedVaultId,
+        memoryScope: "vault",
+        shareToFeed,
       });
 
       setMessage(t.saved);
@@ -409,6 +418,7 @@ export default function MobileRecordPage() {
             )}
           </select>
         </label>
+        <p className="mobileFormHelper">{t.vaultPrivateNote || copy.en.vaultPrivateNote}</p>
 
         <div className="mobileRecorderModeTabs">
           <button
@@ -502,6 +512,19 @@ export default function MobileRecordPage() {
           onChange={(event) => setScript(event.target.value)}
           placeholder={t.scriptPlaceholder}
         />
+
+        <label className="mobileToggleRow">
+          <input
+            type="checkbox"
+            checked={shareToFeed}
+            disabled={saving}
+            onChange={(event) => setShareToFeed(event.target.checked)}
+          />
+          <span>
+            <strong>{t.shareToFeed || copy.en.shareToFeed}</strong>
+            <small>{t.shareToFeedHelp || copy.en.shareToFeedHelp}</small>
+          </span>
+        </label>
 
         <button type="button" onClick={saveRecording} disabled={saving}>
           {saving ? (

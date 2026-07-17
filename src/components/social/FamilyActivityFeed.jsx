@@ -352,6 +352,7 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
           media_path,
           media_mime_type,
           created_by,
+          memory_scope,
           feed_visibility,
           show_on_public_page,
           vault_id,
@@ -366,6 +367,7 @@ export default function FamilyActivityFeed({ feedType = "family", limit = 30 }) 
         )
       `)
       .in("network_id", networkIds)
+      .eq("feed_visibility", "network")
       .order("created_at", { ascending: false })
       .limit(limit);
 

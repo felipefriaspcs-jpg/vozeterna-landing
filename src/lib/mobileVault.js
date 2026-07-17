@@ -421,6 +421,8 @@ export async function saveMobileMemoryToV2({
   forcedType,
   networkType = "family",
   targetVaultId,
+  memoryScope = targetVaultId ? "vault" : "library",
+  shareToFeed = false,
   onProgress,
 }) {
   if (!user?.id) {
@@ -438,12 +440,21 @@ export async function saveMobileMemoryToV2({
     status: "preparing",
   });
 
-  const { networkId, vaultId } = await resolveTargetVault({
-    supabase,
-    user,
-    targetVaultId,
-    networkType,
-  });
+  const safeMemoryScope = memoryScope === "vault" ? "vault" : "library";
+  const shouldShareToFeed = shareToFeed === true;
+  let networkId = null;
+  let vaultId = null;
+
+  if (safeMemoryScope === "vault" || targetVaultId || shouldShareToFeed) {
+    const resolvedTarget = await resolveTargetVault({
+      supabase,
+      user,
+      targetVaultId,
+      networkType,
+    });
+    networkId = resolvedTarget.networkId;
+    vaultId = resolvedTarget.vaultId;
+  }
 
   const fileName = getSafeFileName(file.name || `memory-${Date.now()}.webm`);
   const filePath = `${user.id}/${folder}/${Date.now()}-${fileName}`;
@@ -493,9 +504,10 @@ export async function saveMobileMemoryToV2({
     media_path: filePath,
     media_mime_type: mimeType,
     media_size_bytes: file.size || 0,
-    feed_visibility: "network",
+    memory_scope: safeMemoryScope,
+    feed_visibility: shouldShareToFeed ? "network" : "private",
     show_on_public_page: false,
-    is_family_visible: true,
+    is_family_visible: shouldShareToFeed,
     is_public_approved: false,
     requires_admin_approval: false,
   });
@@ -512,29 +524,32 @@ export async function saveMobileMemoryToV2({
     status: "saving",
   });
 
-  await supabase.from("network_activity").insert({
-    network_id: networkId,
-    vault_id: vaultId,
-    memory_id: memoryId,
-    actor_id: user.id,
-    activity_type:
-      memoryType === "photo"
-        ? "photo_added"
-        : memoryType === "video"
-          ? "video_added"
-          : memoryType === "audio"
-            ? "voice_added"
-            : "memory_added",
-    title: cleanTitle,
-    feed_visibility: "network",
-    is_commentable: true,
-    metadata: {
-      source: "mobile",
-      media_path: filePath,
-      media_mime_type: mimeType,
-      network_type: networkType,
-    },
-  });
+  if (shouldShareToFeed && networkId) {
+    await supabase.from("network_activity").insert({
+      network_id: networkId,
+      vault_id: vaultId,
+      memory_id: memoryId,
+      actor_id: user.id,
+      activity_type:
+        memoryType === "photo"
+          ? "photo_added"
+          : memoryType === "video"
+            ? "video_added"
+            : memoryType === "audio"
+              ? "voice_added"
+              : "memory_added",
+      title: cleanTitle,
+      feed_visibility: "network",
+      is_commentable: true,
+      metadata: {
+        source: "mobile",
+        media_path: filePath,
+        media_mime_type: mimeType,
+        memory_scope: safeMemoryScope,
+        network_type: networkType,
+      },
+    });
+  }
 
   onProgress?.({
     percent: 95,

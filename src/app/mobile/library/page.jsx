@@ -108,7 +108,8 @@ export default function MobileLibraryPage() {
 
     const { data, error } = await supabase
       .from("memories")
-      .select("id, title, body, type, media_path, media_mime_type, media_size_bytes, feed_visibility, created_at, vault_id, network_id, created_by")
+      .select("id, title, body, type, media_path, media_mime_type, media_size_bytes, memory_scope, feed_visibility, created_at, vault_id, network_id, created_by")
+      .or("memory_scope.is.null,memory_scope.eq.library")
       .order("created_at", { ascending: false });
 
     if (error) {

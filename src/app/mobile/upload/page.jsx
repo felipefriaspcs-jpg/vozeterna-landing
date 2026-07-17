@@ -36,6 +36,10 @@ const copy = {
     noFile: "Choose a file first.",
     chooseVault: "Choose or create a vault before uploading.",
     privateNote: "Files are private by default and saved inside the selected profile.",
+    vaultPrivateNote: "Saved only inside this vault unless you choose to share it.",
+    libraryPrivateNote: "Saved to your private library unless you choose to share it.",
+    shareToFeed: "Share to family feed",
+    shareToFeedHelp: "Let members of this family network see this in the feed.",
   },
   es: {
     label: "Subida movil",
@@ -65,6 +69,10 @@ const copy = {
     noFile: "Primero elige un archivo.",
     chooseVault: "Elige o crea una boveda antes de subir.",
     privateNote: "Los archivos son privados por defecto y se guardan dentro del perfil seleccionado.",
+    vaultPrivateNote: "Se guardara solo dentro de esta boveda a menos que decidas compartirlo.",
+    libraryPrivateNote: "Se guardara en tu biblioteca privada a menos que decidas compartirlo.",
+    shareToFeed: "Compartir en la red familiar",
+    shareToFeedHelp: "Permite que los miembros de esta red familiar lo vean en el feed.",
   },
 };
 
@@ -76,6 +84,7 @@ export default function MobileUploadPage() {
   const [vaults, setVaults] = useState([]);
   const [selectedVaultId, setSelectedVaultId] = useState("");
   const [selectedAlbumId, setSelectedAlbumId] = useState("");
+  const [shareToFeed, setShareToFeed] = useState(false);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null);
@@ -216,8 +225,6 @@ export default function MobileUploadPage() {
 
     if (queryVaultId && rows.some((vault) => vault.id === queryVaultId)) {
       setSelectedVaultId(queryVaultId);
-    } else if (rows.length > 0) {
-      setSelectedVaultId(rows[0].id);
     }
   }
 
@@ -244,7 +251,7 @@ export default function MobileUploadPage() {
         return;
       }
 
-      if (!selectedVaultId) {
+      if (shareToFeed && !selectedVaultId) {
         setMessage(t.chooseVault);
         setSaving(false);
         updateUploadProgress({ percent: 0, status: "error", totalBytes: file.size || 0 });
@@ -261,6 +268,8 @@ export default function MobileUploadPage() {
         note,
         folder: "mobile-uploads",
         targetVaultId: selectedVaultId || undefined,
+        memoryScope: selectedVaultId ? "vault" : "library",
+        shareToFeed,
         onProgress: updateUploadProgress,
       });
 
@@ -359,7 +368,7 @@ export default function MobileUploadPage() {
         >
           <ImagePlus size={28} />
           <strong>{t.choose}</strong>
-          <span>{t.privateNote}</span>
+          <span>{selectedVaultId ? t.vaultPrivateNote : t.libraryPrivateNote}</span>
         </button>
 
         <input
@@ -426,6 +435,19 @@ export default function MobileUploadPage() {
           placeholder={t.placeholder}
           disabled={saving}
         />
+        </label>
+
+        <label className="mobileToggleRow">
+          <input
+            type="checkbox"
+            checked={shareToFeed}
+            disabled={saving}
+            onChange={(event) => setShareToFeed(event.target.checked)}
+          />
+          <span>
+            <strong>{t.shareToFeed}</strong>
+            <small>{t.shareToFeedHelp}</small>
+          </span>
         </label>
 
         <button type="button" onClick={uploadMemory} disabled={saving}>

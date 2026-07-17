@@ -367,8 +367,9 @@ export default function MobileProfileDetailPage() {
 
     const { data: memoryData } = await supabase
       .from("memories")
-      .select("id, title, body, type, media_path, media_mime_type, feed_visibility, show_on_public_page, created_by, vault_id, network_id, created_at")
+      .select("id, title, body, type, media_path, media_mime_type, memory_scope, feed_visibility, show_on_public_page, created_by, vault_id, network_id, created_at")
       .eq("vault_id", id)
+      .or("memory_scope.eq.vault,memory_scope.is.null")
       .order("created_at", { ascending: false });
 
     const { data: albumData } = await supabase
