@@ -13,6 +13,7 @@
   --muted: #5d7380;
   --line: rgba(13, 59, 78, .11);
   --shadow: 0 24px 80px rgba(13, 59, 78, .13);
+  --pattern: linear-gradient(to right, var(--navy) 10%, #1e4c5f 20%, var(--navy) 30%, #1e4c5f 35%, var(--navy) 40%, #1e4c5f 45%, var(--navy) 50%, #1e4c5f 55%, var(--navy) 60%, #1e4c5f 65%, var(--navy) 70%, #1e4c5f 80%, var(--navy) 90%);
 }
 
 @theme {
@@ -27,6 +28,12 @@
   --color-line: var(--line);
   --shadow-soft: var(--shadow);
   --font-annapurna: "Annapurna SIL", serif;
+}
+
+@layer utilities {
+  .bg-pattern {
+    background: var(--pattern);
+  }
 }
 
 html { scroll-behavior: smooth; }
@@ -89,13 +96,16 @@ section.hero {
   @apply flex items-center justify-center gap-3 rounded-lg border px-8 py-2 font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft;
 }
 .btn.primary {
-  @apply bg-navy text-white;
+  @apply text-white bg-(image:--pattern);
 }
 .btn.secondary {
   @apply bg-white text-primary border-primary;
 }
 .btn.gold {
   @apply bg-bottom-right from-[#bd7c25] to-gold text-white border-primary bg-primary;
+}
+.btn.btn-pricing {
+  @apply w-60;
 }
 
 .hero {

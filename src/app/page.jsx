@@ -102,14 +102,14 @@ const copy = {
     betaTitle: "Founder Beta Notice:",
     betaText: "VozEterna is currently accepting early customers. Some services are delivered manually while the full platform is being built.",
 
-    pricingEyebrow: "SIMPLE PRICING. LASTING VALUE.",
+    pricingEyebrow: "Choose the legacy plan that fits your family.",
     viewPrices: "View prices in:",
     popular: "MOST POPULAR",
     month: "/mo",
     plans: [
-      ["Starter", "Perfect for individuals getting started.", ["Guided recordings", "Private vault (5GB)", "Basic sharing"], "Get Started"],
-      ["Family Legacy", "Everything your family needs to preserve and share.", ["Unlimited recordings", "Private vault (50GB)", "QR memorial pages", "Legacy planner"], "Start Your Legacy"],
-      ["Funeral Home Partner", "Powerful tools to serve more families.", ["Digital tribute packages", "Family upload pages", "White-label branding", "Priority support"], "Partner With Us"],
+      ["Starter", "Perfect for one person starting their family legacy.", ["Up to 2 Legacy Vaults", "Guided voice recordings", "Private storage, 5GB included", "Basic family sharing", "QR memorial link"], "Start Preserving"],
+      ["Family Legacy", "For families who want to preserve and share more memories together.", ["Up to 10 Legacy Vaults", "Unlimited guided recordings", "Private storage, 50GB included", "QR memorial pages", "Family comments and sharing", "Legacy planner"], "Start Your Legacy"],
+      ["Funeral Home Partner", "For funeral homes and service providers helping families preserve memories.", ["Up to 25 Family Legacy Vaults", "Digital tribute packages", "Family upload pages", "QR memorial pages", "Partner branding", "Priority support"], "Partner With Us"],
     ],
 
     finalTitle: "Do not wait until all you have left is photos.",
@@ -209,14 +209,14 @@ const copy = {
     betaTitle: "Aviso de Beta Fundador:",
     betaText: "VozEterna actualmente acepta clientes tempranos. Algunos servicios se entregan manualmente mientras se construye la plataforma completa.",
 
-    pricingEyebrow: "PRECIOS SIMPLES. VALOR DURADERO.",
+    pricingEyebrow: "Elige el plan sucesorio que mejor se adapte a tu familia.",
     viewPrices: "Ver precios en:",
     popular: "MAS POPULAR",
     month: "/mes",
     plans: [
-      ["Inicial", "Perfecto para personas que apenas comienzan.", ["Grabaciones guiadas", "Boveda privada (5GB)", "Compartir basico"], "Comenzar"],
-      ["Legado Familiar", "Todo lo que tu familia necesita para preservar y compartir.", ["Grabaciones ilimitadas", "Boveda privada (50GB)", "Paginas memoriales con QR", "Planificador de legado"], "Iniciar Mi Legado"],
-      ["Aliado Funerario", "Herramientas para servir mejor a mas familias.", ["Paquetes de homenaje digital", "Paginas de carga familiar", "Marca blanca", "Soporte prioritario"], "Ser Aliado"],
+      ["Inicial", "Perfecto para una persona que comienza a crear el legado familiar.", ["Hasta 2 bóvedas de legado", "Grabaciones de voz guiadas", "Almacenamiento privado, 5 GB incluidos", "Compartir con la familia", "Enlace QR conmemorativo"], "Comienza a preservar"],
+      ["Legado familiar", "Para familias que desean preservar y compartir más recuerdos juntas.", ["Hasta 10 bóvedas de legado", "Grabaciones guiadas ilimitadas", "Almacenamiento privado, 50 GB incluidos", "Páginas conmemorativas QR", "Comentarios y compartición familiar", "Planificador de legado"], "Comienza tu legado"],
+      ["Socio de funerarias", "Para funerarias y proveedores de servicios que ayudan a las familias a preservar recuerdos.", ["Hasta 25 bóvedas de legado familiar", "Paquetes de homenaje digital", "Páginas de carga familiar", "Páginas conmemorativas QR", "Marca de socio", "Soporte prioritario"], "Asóciate con nosotros"],
     ],
 
     finalTitle: "No esperes hasta que lo unico que quede sean fotos.",
@@ -537,10 +537,10 @@ export default function Home() {
           <div className="flex flex-col lg:flex-row items-center gap-8">
             {t.plans.map(([name, description, items, cta], i) => (
               <motion.article className="shadow-primary shadow-md w-84 rounded-2xl overflow-hidden" key={name} initial={{ transform: "scale(0.8)", opacity: 0 }} whileInView={{ transform: "scale(1)", opacity: 1 }} viewport={{ once: true }}>
-                {i === 1 && <div className="bg-navy text-white text-center text-sm py-1.5 font-semibold">{t.popular}</div>}
+                {i === 1 && <div className="bg-navy text-white text-center text-sm py-1.5 font-semibold bg-pattern">{t.popular}</div>}
                 <div className="flex flex-col items-center bg-white px-4 pt-8 pb-4">
                   <h3 className="text-2xl font-semibold">{name}</h3>
-                  <p className="max-w-60 text-center leading-tight mt-2">{description}</p>
+                  <p className="text-center text-xs leading-tight mt-2">{description}</p>
                   <div className="flex flex-wrap justify-center items-center gap-x-8 py-4">
                     <div>
                       <strong className="text-5xl mr-4">{prices[currency][i]}</strong>
@@ -548,18 +548,18 @@ export default function Home() {
                     </div>
                     <p className="text-sm text-muted">Billed annually</p>
                   </div>
-                  <ul className="h-24 mb-6">
+                  <ul className="h-40 mb-6 space-y-2">
                     {items.map((item) => <li className="flex items-center gap-3" key={item}>
                       <LuCheck size={12} />
-                      <span>{item}</span></li>
+                      <span className="text-sm font-semibold">{item}</span></li>
                     )}
                   </ul>
-                  <Cta href={i === 2 ? funeralForm : familyForm} variant={i === 1 ? "primary" : "secondary"}>{cta}</Cta>
+                  <Link href={i === 2 ? funeralForm : familyForm} className={`btn btn-pricing ${i === 1 ? "primary" : "secondary"}`}>{cta}</Link>
                 </div>
               </motion.article>
             ))}
           </div>
-          <div className="flex xl:flex-col items-center xl:items-start gap-8">
+          <div className="flex flex-col md:flex-row 2xl:flex-col items-start gap-8">
             <motion.div className="flex items-center gap-4" initial={{ transform: "translate(0, 20px)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: 0.3 } }} viewport={{ once: true }}>
               <div className="w-10 h-10 rounded-full border-2 border-primary flex justify-center items-center">
                 <LuTimerReset size={20} />
