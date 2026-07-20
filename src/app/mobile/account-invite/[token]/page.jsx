@@ -11,8 +11,7 @@ const copy = {
     title: "Use your vault invite link",
     subtitle:
       "VozEterna now creates account access and vault access from one private vault invite link.",
-    message:
-      "This account-only invite route is no longer used. Open the private vault invite link you received instead.",
+    message: "Account-only invites have been replaced. Please use the private vault invite link.",
     home: "Go to VozEterna",
   },
   es: {
@@ -21,7 +20,7 @@ const copy = {
     subtitle:
       "VozEterna ahora crea acceso de cuenta y acceso al vault desde un solo enlace privado.",
     message:
-      "Esta ruta de invitacion solo para cuenta ya no se usa. Abre el enlace privado del vault que recibiste.",
+      "Las invitaciones solo para cuenta fueron reemplazadas. Usa el enlace privado de invitacion al vault.",
     home: "Ir a VozEterna",
   },
 };

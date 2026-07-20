@@ -13,6 +13,7 @@ const copy = {
     signedOutTitle: "Create your VozEterna account",
     signedOutSubtitle:
       "This private invite is tied to this link. Enter your email and we'll send you a secure sign-in link. After signing in, you'll come back here to accept the invite.",
+    emailLabel: "Email address",
     signedOutButton: "Send secure sign-in link",
     signedOutSuccess: "Secure link sent. Check your inbox, then return to this invite.",
     signedInTitle: "Accept private vault invite",
@@ -26,7 +27,7 @@ const copy = {
     invalid: "Invite link is invalid.",
     inviteProblem: "This invite may be expired or no longer valid. Please ask for a new invite.",
     consentError: "Please confirm consent before accepting.",
-    success: "Invite accepted.",
+    success: "Invite accepted. Opening your vault...",
     explanation: "This invite creates your account access and vault access in one flow.",
     invitedVault: "Invited vault",
     network: "Network",
@@ -39,27 +40,28 @@ const copy = {
     label: "Invitacion privada",
     signedOutTitle: "Crea tu cuenta de VozEterna",
     signedOutSubtitle:
-      "Esta invitacion privada esta conectada a este enlace. Ingresa tu correo y te enviaremos un enlace seguro. Despues de iniciar sesion, regresaras aqui para aceptar la invitacion.",
+      "Esta invitación privada está conectada a este enlace. Ingresa tu correo y te enviaremos un enlace seguro. Después de iniciar sesión, regresarás aquí para aceptar la invitación.",
+    emailLabel: "Correo electrónico",
     signedOutButton: "Enviar enlace seguro",
-    signedOutSuccess: "Enlace seguro enviado. Revisa tu correo y vuelve a esta invitacion.",
-    signedInTitle: "Aceptar invitacion privada",
+    signedOutSuccess: "Enlace seguro enviado. Revisa tu correo y vuelve a esta invitación.",
+    signedInTitle: "Aceptar invitación privada",
     signedInSubtitle:
-      "Ya iniciaste sesion. Confirma tu consentimiento para unirte a este vault privado de VozEterna.",
+      "Ya iniciaste sesión. Confirma tu consentimiento para unirte a este vault privado de VozEterna.",
     consent:
       "Entiendo que este es un vault privado de recuerdos familiares/de amigos y acepto participar con respeto.",
-    accept: "Aceptar invitacion",
-    accepting: "Aceptando invitacion...",
+    accept: "Aceptar invitación",
+    accepting: "Aceptando invitación...",
     sending: "Enviando enlace seguro...",
     missingEmail: "Ingresa tu correo.",
-    invalid: "El enlace de invitacion no es valido.",
-    inviteProblem: "Esta invitacion puede estar vencida o ya no ser valida. Pide una invitacion nueva.",
-    consentError: "Confirma tu consentimiento antes de aceptar.",
-    success: "Invitacion aceptada.",
-    explanation: "Esta invitacion crea tu acceso de cuenta y acceso al vault en un solo flujo.",
+    invalid: "El enlace de invitación no es válido.",
+    inviteProblem: "Esta invitación puede estar vencida o ya no ser válida. Pide una nueva invitación.",
+    consentError: "Confirma el consentimiento antes de aceptar.",
+    success: "Invitación aceptada. Abriendo tu vault...",
+    explanation: "Esta invitación crea el acceso a tu cuenta y al vault privado en un solo flujo.",
     invitedVault: "Vault invitado",
     network: "Red",
     role: "Rol",
-    loading: "Cargando invitacion...",
+    loading: "Cargando invitación...",
     feed: "Abrir feed",
     home: "VozEterna",
   },
@@ -75,7 +77,7 @@ function getInviteRole(value) {
 }
 
 function getReturnPath(token) {
-  return `/mobile/invite/${encodeURIComponent(token || "")}`;
+  return `/mobile/invite/${token || ""}`;
 }
 
 function getRedirectPath(result) {
@@ -123,11 +125,11 @@ export default function MobileInvitePage() {
 
     async function loadUser() {
       const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (mounted) {
-        setUser(currentUser || null);
+        setUser(session?.user || null);
       }
     }
 
@@ -307,7 +309,7 @@ export default function MobileInvitePage() {
         {!showLoading && !showError && status !== "success" && !signedIn && (
           <form className="mobileInviteAuthForm" onSubmit={sendMagicLink}>
             <label>
-              <span className="mobileCapsLabel">Email</span>
+              <span className="mobileCapsLabel">{t.emailLabel}</span>
               <input
                 type="email"
                 required
