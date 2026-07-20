@@ -330,28 +330,30 @@ export default function Home() {
       </header>
 
       <section className="hero">
-        <div>
-          <motion.p initial={{ transform: "translate(0, 20px)", opacity: 0 }} animate={{ transform: "translate(0, 0)", opacity: 1, transition: { duration: 1 } }} className="eyebrow">{t.eyebrow}</motion.p>
-          <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 1, delay: 1 } }} className="font-annapurna">{t.heroTitle}</motion.h1>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 1, delay: 1 } }} className="flex items-center gap-4 my-4">
-            <div className="w-20 h-0.5 rounded-full bg-primary" />
-            <div className="w-2 h-2 rounded-full bg-primary" />
-            <div className="w-20 h-0.5 rounded-full bg-primary" />
-          </motion.div>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.3 } }} className="lede">{t.heroText}</motion.p>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.6 } }} className="heroActions">
-            <Cta href={familyForm}>{t.primaryCta}</Cta>
-            {/* <Cta href={familyForm} variant="secondary">{t.secondaryCta}</Cta> */}
-            <Cta href={funeralForm} variant="gold">{t.partnerCta}</Cta>
-          </motion.div>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.9 } }} className="inviteSignIn">
-            {t.inviteSignInPrefix} <a href="/mobile?auth=signin">{t.inviteSignInAction}</a>
-          </motion.p>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 2.2 } }} className="trust">{t.trust}</motion.p>
+        <div className="container mx-auto px-5">
+          <div className="flex flex-col items-center text-center xl:items-start xl:text-left xl:max-w-2xl gap-y-4">
+            <motion.p initial={{ transform: "translate(0, 20px)", opacity: 0 }} animate={{ transform: "translate(0, 0)", opacity: 1, transition: { duration: 1 } }} className="eyebrow">{t.eyebrow}</motion.p>
+            <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 1, delay: 1 } }} className="font-annapurna">{t.heroTitle}</motion.h1>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 1, delay: 1 } }} className="flex items-center gap-4 my-4">
+              <div className="w-20 h-0.5 rounded-full bg-primary" />
+              <div className="w-2 h-2 rounded-full bg-primary" />
+              <div className="w-20 h-0.5 rounded-full bg-primary" />
+            </motion.div>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.3 } }} className="lede">{t.heroText}</motion.p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.6 } }} className="heroActions">
+              <Cta href={familyForm}>{t.primaryCta}</Cta>
+              {/* <Cta href={familyForm} variant="secondary">{t.secondaryCta}</Cta> */}
+              <Cta href={funeralForm} variant="gold">{t.partnerCta}</Cta>
+            </motion.div>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.9 } }} className="inviteSignIn">
+              {t.inviteSignInPrefix} <a href="/mobile?auth=signin">{t.inviteSignInAction}</a>
+            </motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 2.2 } }} className="trust">{t.trust}</motion.p>
+          </div>
         </div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 1 } }} className="heroImage">
-          <Image src="/images/hero-family.png" alt="Family recording memories together" width={1448} height={1086} className="rounded-br-[50%]" priority />
+          <Image src="/images/hero-family.png" alt="Family recording memories together" width={1448} height={1086} priority />
         </motion.div>
       </section>
 
@@ -359,7 +361,7 @@ export default function Home() {
         {t.features.map(([icon, title, text], i) => (
           <motion.article className="feature" key={title} initial={{ transform: "translate(0, 20px)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: i * 0.1 + 0.3 } }} viewport={{ once: true }}>
             <div className="h-20 mb-4">
-              <Image src={featureImgs[i]} alt={title} width={500} height={200} className="h-20 w-auto" alt="" />
+              <Image src={featureImgs[i]} alt={title} width={500} height={200} className="h-20 w-auto object-contain" alt="" />
             </div>
             <h3>{title}</h3>
             <p>{text}</p>
@@ -464,7 +466,7 @@ export default function Home() {
         <div className="flex justify-center">
           <h2 className="section-label">{t.loved}</h2>
         </div>
-        <div className="flex justify-center gap-8 mt-4">
+        <div className="flex flex-col lg:flex-row justify-center gap-8 mt-4">
           {t.testimonials.map(([name, location, quote], i) => (
             <article className="quote" key={name}>
               <div className="flex gap-4 items-start h-24">
@@ -492,7 +494,7 @@ export default function Home() {
       </section>
 
       <section className="" id="about">
-        <div className="flex bg-primary/10 rounded-3xl">
+        <div className="lg:flex bg-primary/10 rounded-3xl">
           <div className="flex-1 flex items-center gap-10 p-4">
             <Image src="/images/en-es.svg" alt="" width={160} height={160} />
             <div className="flex-1 space-y-2">
@@ -501,8 +503,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex-1 flex">
-            <img src="/images/bilingual-family.png" alt="Bilingual family using VozEterna" className="h-full w-[50%] object-cover mask-[linear-gradient(to_left,transparent,black_25%)]" />
+          <div className="flex-1 flex p-4 lg:p-0">
+            <img src="/images/bilingual-family.png" alt="Bilingual family using VozEterna" className="h-40 lg:h-full w-40 lg:w-[50%] object-cover rounded-full lg:rounded-none lg:mask-[linear-gradient(to_left,transparent,black_25%)]" />
             <div className="flex-1 px-8 flex flex-col justify-center gap-6">
               <p className="text-xl font-semibold">{t.bilingualSide}</p>
               <div className="flex items-center gap-4 opacity-70">
@@ -532,7 +534,7 @@ export default function Home() {
         </div> */}
 
         <div className="mt-4 flex flex-col 2xl:flex-row items-center gap-10 justify-center">
-          <div className="flex items-center gap-8">
+          <div className="flex flex-col lg:flex-row items-center gap-8">
             {t.plans.map(([name, description, items, cta], i) => (
               <motion.article className="shadow-primary shadow-md w-84 rounded-2xl overflow-hidden" key={name} initial={{ transform: "scale(0.8)", opacity: 0 }} whileInView={{ transform: "scale(1)", opacity: 1 }} viewport={{ once: true }}>
                 {i === 1 && <div className="bg-navy text-white text-center text-sm py-1.5 font-semibold">{t.popular}</div>}
@@ -581,8 +583,8 @@ export default function Home() {
       </section>
 
       <section>
-        <div className="flex rounded-3xl bg-navy px-20 relative">
-          <div className="flex gap-8 flex-1 py-10">
+        <div className="flex flex-col lg:flex-row rounded-3xl bg-navy px-20 relative">
+          <div className="flex items-center gap-8 flex-1 py-10">
             <div className="w-16">
               <img src="/brand/logo-emblem.png" className="w-16" alt="" />
             </div>
@@ -591,8 +593,8 @@ export default function Home() {
               <p>{t.finalText}</p>
             </div>
           </div>
-          <div className="flex-1 flex items-center relative">
-            <div className="relative flex justify-end items-center flex-1 z-10">
+          <div className="flex-1 flex items-center relative py-10">
+            <div className="relative flex justify-center lg:justify-end items-center flex-1 z-10">
               <Cta href={familyForm} variant="gold">{t.finalCta}</Cta>
             </div>
             <div className="absolute h-full w-[80%] top-0 left-0">
