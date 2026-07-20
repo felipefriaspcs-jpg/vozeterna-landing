@@ -3,3 +3,9 @@ node_modules
 out
 .env*.local
 .DS_Store
+
+# Local planning and backup files
+VEplan.txt
+vozeterna-commit-timeline.txt
+backup-before-album-recovery-*/
+components/RecordMemories.tsx
