@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, QrCode, Share2, UserPlus, UsersRound } from "lucide-react";
+import { Check, Copy, QrCode, Share2, UsersRound } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../../../lib/supabaseClient";
 import {
@@ -12,11 +12,13 @@ import {
 } from "../../../lib/mobileVault";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
 
+const INVITE_EXPIRES_IN_DAYS = 30;
+
 const copy = {
   en: {
     label: "Connect",
     title: "Invite family or friends",
-    subtitle: "Create a private QR invite link for people you trust. This does not make your vault public.",
+    subtitle: "Create one private QR invite link for account access and vault access.",
     family: "Family",
     friends: "Friends",
     viewer: "Viewer",
@@ -34,20 +36,20 @@ const copy = {
   es: {
     label: "Conectar",
     title: "Invita familia o amigos",
-    subtitle: "Crea un código QR privado para personas de confianza. Esto no hace pública tu bóveda.",
+    subtitle: "Crea un solo enlace QR privado para acceso de cuenta y acceso al vault.",
     family: "Familia",
     friends: "Amigos",
     viewer: "Visitante",
     contributor: "Colaborador",
-    loading: "Creando invitación segura...",
-    noInvite: "Todavía no hay enlace.",
+    loading: "Creando invitacion segura...",
+    noInvite: "Todavia no hay enlace.",
     viewerText: "puede ver actualizaciones privadas.",
     contributorText: "puede agregar recuerdos y reflexiones.",
     copy: "Copiar enlace",
-    share: "Compartir invitación",
+    share: "Compartir invitacion",
     copied: "Enlace copiado.",
-    signIn: "Inicia sesión antes de crear una invitación.",
-    inviteDenied: "Solo el dueno de la boveda o un administrador puede invitar personas a esta boveda.",
+    signIn: "Inicia sesion antes de crear una invitacion.",
+    inviteDenied: "Solo el dueno del vault o un administrador puede invitar personas a este vault.",
   },
 };
 
@@ -55,16 +57,16 @@ function normalizeInviteRole(role) {
   return role === "viewer" ? "viewer" : "contributor";
 }
 
-async function findFirstManageableNetwork(supabase, user) {
+async function findFirstManageableNetwork(supabaseClient, user) {
   const vaults = await loadAccessibleVaults(
-    supabase,
+    supabaseClient,
     user,
     "id, network_id, created_by, created_at"
   );
 
   for (const vault of vaults) {
     if (!vault.network_id) continue;
-    const access = await getVaultAccess(supabase, user, vault);
+    const access = await getVaultAccess(supabaseClient, user, vault);
     if (access.canManage) return vault.network_id;
   }
 
@@ -74,25 +76,17 @@ async function findFirstManageableNetwork(supabase, user) {
 export default function MobileConnectPage() {
   const [language, setLanguage] = useState("en");
   const [inviteUrl, setInviteUrl] = useState("");
-  const [accountInviteUrl, setAccountInviteUrl] = useState("");
   const [message, setMessage] = useState("");
-  const [accountMessage, setAccountMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [accountLoading, setAccountLoading] = useState(false);
   const [role, setRole] = useState("contributor");
   const [networkType, setNetworkType] = useState("family");
 
   const t = copy[language] || copy.en;
-  const vaultInviteTitle = language === "es" ? "Invitar a esta bóveda" : "Invite to this vault";
+  const vaultInviteTitle = language === "es" ? "Invitar a este vault" : "Invite to this vault";
   const vaultInviteText =
     language === "es"
-      ? "Usa esto para darle acceso a esta bóveda privada."
-      : "Use this to give someone access to this private vault.";
-  const accountInviteTitle = language === "es" ? "Invitar a VozEterna" : "Invite to VozEterna";
-  const accountInviteText =
-    language === "es"
-      ? "Usa esto cuando alguien necesita crear una cuenta primero. Esto todavía no le da acceso a una bóveda privada."
-      : "Use this when someone needs an account first. This does not give access to a private vault yet.";
+      ? "Usa este enlace para que la persona cree o inicie sesion y acepte acceso al vault privado."
+      : "Use this link so someone can create or sign in to an account and accept private vault access.";
 
   useEffect(() => {
     setLanguage(getInitialMobileLanguage());
@@ -104,10 +98,7 @@ export default function MobileConnectPage() {
     }
 
     window.addEventListener("vozeterna-language-change", handleLanguageChange);
-
-    return () => {
-      window.removeEventListener("vozeterna-language-change", handleLanguageChange);
-    };
+    return () => window.removeEventListener("vozeterna-language-change", handleLanguageChange);
   }, []);
 
   useEffect(() => {
@@ -131,7 +122,10 @@ export default function MobileConnectPage() {
         return;
       }
 
-      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+      const params =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search)
+          : new URLSearchParams();
       const requestedNetworkId = params.get("networkId") || "";
       const requestedVaultId = params.get("vaultId") || "";
       let networkId = "";
@@ -179,17 +173,29 @@ export default function MobileConnectPage() {
         }
       }
 
-      const { data, error } = await supabase.rpc("create_sharable_link", {
+      const expiresAt = new Date(
+        Date.now() + INVITE_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000
+      ).toISOString();
+      let { data, error } = await supabase.rpc("create_sharable_link", {
         target_network_id: networkId,
         target_role: inviteRole,
+        target_expires_at: expiresAt,
       });
+
+      if (error && /target_expires_at|schema cache|function/i.test(error.message || "")) {
+        const fallbackResult = await supabase.rpc("create_sharable_link", {
+          target_network_id: networkId,
+          target_role: inviteRole,
+        });
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) {
         throw new Error(error.message);
       }
 
       const token = data?.token;
-
       if (!token) {
         throw new Error("Invite token was not created.");
       }
@@ -202,101 +208,6 @@ export default function MobileConnectPage() {
     }
   }
 
-  async function getManageableNetworkContext(selectedNetworkType = networkType) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      throw new Error(t.signIn);
-    }
-
-    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
-    const requestedNetworkId = params.get("networkId") || "";
-    const requestedVaultId = params.get("vaultId") || "";
-    let networkId = "";
-
-    if (requestedVaultId) {
-      const { data: targetVault, error: targetVaultError } = await supabase
-        .from("vaults")
-        .select("id, network_id, created_by")
-        .eq("id", requestedVaultId)
-        .maybeSingle();
-
-      if (targetVaultError) {
-        throw new Error(targetVaultError.message);
-      }
-
-      networkId = targetVault?.network_id || "";
-
-      const access = await getVaultAccess(supabase, user, targetVault);
-      if (!access.canManage) {
-        throw new Error(t.inviteDenied);
-      }
-    }
-
-    if (!networkId && requestedNetworkId) {
-      networkId = requestedNetworkId;
-    }
-
-    if (networkId) {
-      const existingNetwork = await loadExistingNetwork(supabase, networkId);
-      const access = await getNetworkAccess(supabase, user, networkId);
-
-      if (!existingNetwork?.id || !access.canManage) {
-        throw new Error(t.inviteDenied);
-      }
-
-      return { user, networkId };
-    }
-
-    const manageableNetworkId = await findFirstManageableNetwork(supabase, user);
-
-    if (!manageableNetworkId) {
-      throw new Error(t.inviteDenied);
-    }
-
-    const access = await getNetworkAccess(supabase, user, manageableNetworkId);
-
-    if (!access.canManage) {
-      throw new Error(t.inviteDenied);
-    }
-
-    return { user, networkId: manageableNetworkId };
-  }
-
-  async function createAccountInvite() {
-    setAccountLoading(true);
-    setAccountMessage("");
-    setAccountInviteUrl("");
-
-    try {
-      const { user } = await getManageableNetworkContext(networkType);
-      const token = crypto.randomUUID();
-      const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-
-      const { error } = await supabase.from("account_invites").insert({
-        token,
-        created_by: user.id,
-        status: "active",
-        max_uses: 1,
-        used_count: 0,
-        expires_at: expiresAt,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setAccountInviteUrl(`${window.location.origin}/mobile/account-invite/${token}`);
-      setAccountMessage(language === "es" ? "Invitación de cuenta creada." : "Account invite created.");
-    } catch (error) {
-      setAccountMessage(error.message || "Could not create account invite.");
-    } finally {
-      setAccountLoading(false);
-    }
-  }
-
   async function copyInvite() {
     if (!inviteUrl) return;
 
@@ -304,19 +215,12 @@ export default function MobileConnectPage() {
     setMessage(t.copied);
   }
 
-  async function copyAccountInvite() {
-    if (!accountInviteUrl) return;
-
-    await navigator.clipboard.writeText(accountInviteUrl);
-    setAccountMessage(language === "es" ? "Invitación de cuenta copiada." : "Account invite copied.");
-  }
-
   async function shareInvite() {
     if (!inviteUrl) return;
 
     const shareData = {
       title: "Join my VozEterna network",
-      text: "I’m inviting you to contribute to my private VozEterna archive.",
+      text: "I'm inviting you to contribute to my private VozEterna archive.",
       url: inviteUrl,
     };
 
@@ -330,29 +234,6 @@ export default function MobileConnectPage() {
     } catch (error) {
       if (error?.name !== "AbortError") {
         await copyInvite();
-      }
-    }
-  }
-
-  async function shareAccountInvite() {
-    if (!accountInviteUrl) return;
-
-    const shareData = {
-      title: accountInviteTitle,
-      text: accountInviteText,
-      url: accountInviteUrl,
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-        return;
-      }
-
-      await copyAccountInvite();
-    } catch (error) {
-      if (error?.name !== "AbortError") {
-        await copyAccountInvite();
       }
     }
   }
@@ -431,7 +312,7 @@ export default function MobileConnectPage() {
           <UsersRound size={18} />
           <p>
             <strong>
-              {networkType === "family" ? t.family : t.friends} ·{" "}
+              {networkType === "family" ? t.family : t.friends} -{" "}
               {role === "viewer" ? t.viewer : t.contributor}
             </strong>{" "}
             {role === "viewer" ? t.viewerText : t.contributorText}
@@ -454,57 +335,6 @@ export default function MobileConnectPage() {
           <p className="mobileSuccessMessage">
             <Check size={16} />
             <span>{message}</span>
-          </p>
-        )}
-      </section>
-
-      <section className="mobileConnectCard">
-        <div className="mobileInviteText">
-          <UserPlus size={18} />
-          <p>
-            <strong>{accountInviteTitle}</strong>
-            <br />
-            {accountInviteText}
-          </p>
-        </div>
-
-        <div className="mobileQrBox">
-          {accountLoading ? (
-            <div className="mobileQrLoading">
-              <UserPlus size={44} />
-              <p>{language === "es" ? "Creando invitación de cuenta..." : "Creating account invite..."}</p>
-            </div>
-          ) : accountInviteUrl ? (
-            <QRCodeSVG value={accountInviteUrl} size={210} level="M" includeMargin />
-          ) : (
-            <div className="mobileQrLoading">
-              <UserPlus size={44} />
-              <p>{language === "es" ? "Todavía no hay invitación de cuenta." : "No account invite yet."}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="mobileConnectActions">
-          <button type="button" onClick={createAccountInvite} disabled={accountLoading}>
-            <UserPlus size={17} />
-            {accountInviteTitle}
-          </button>
-
-          <button type="button" onClick={copyAccountInvite} disabled={!accountInviteUrl}>
-            <Copy size={17} />
-            {language === "es" ? "Copiar invitación de cuenta" : "Copy account invite"}
-          </button>
-
-          <button type="button" onClick={shareAccountInvite} disabled={!accountInviteUrl}>
-            <Share2 size={17} />
-            {language === "es" ? "Compartir invitación de cuenta" : "Share account invite"}
-          </button>
-        </div>
-
-        {accountMessage && (
-          <p className="mobileSuccessMessage">
-            <Check size={16} />
-            <span>{accountMessage}</span>
           </p>
         )}
       </section>
