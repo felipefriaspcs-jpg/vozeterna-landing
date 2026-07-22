@@ -41,6 +41,8 @@ const copy = {
     connectedPeopleText: "View family and friends connected through invites.",
     consent: "Consent",
     consentText: "Review consent and authorization records.",
+    vaultUnlockCode: "Vault unlock code",
+    vaultUnlockCodeText: "PIN setup will be available after secure verification is enabled.",
   },
   es: {
     label: "Cuenta",
@@ -75,6 +77,8 @@ const copy = {
     connectedPeopleText: "Ver familia y amigos conectados por invitaciones.",
     consent: "Consentimiento",
     consentText: "Revisar consentimientos y autorizaciones.",
+    vaultUnlockCode: "Codigo de desbloqueo de boveda",
+    vaultUnlockCodeText: "La configuracion del PIN estara disponible cuando la verificacion segura este activa.",
   },
 };
 
@@ -361,6 +365,18 @@ export default function MobileAccountPage() {
               <span>{t.premium}</span>
               <strong>{premiumTier}</strong>
             </article>
+          </section>
+
+          <section className="mobileAccountSummary mobileVaultPinSetupNotice">
+            <div className="mobileAvatarPanel">
+              <div className="mobileAvatarCircle">
+                <ShieldCheck size={28} />
+              </div>
+              <div>
+                <strong>{t.vaultUnlockCode}</strong>
+                <p>{t.vaultUnlockCodeText}</p>
+              </div>
+            </div>
           </section>
 
           <form className="mobileFormCard mobileAccountForm" onSubmit={saveChanges}>

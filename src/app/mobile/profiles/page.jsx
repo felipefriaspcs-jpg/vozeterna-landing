@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LockKeyhole, Plus, QrCode, UserRound } from "lucide-react";
+import { LockKeyhole, Plus, QrCode, UserRound, X } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getVaultAccess, loadAccessibleVaults } from "../../../lib/mobileVault";
 import { getVaultSkinImage, normalizeVaultSkin } from "../../../lib/vaultSkins";
@@ -24,6 +24,11 @@ const copy = {
     emptyText: "Create your first private memory vault to begin preserving stories, photos, recordings, and family legacy.",
     createFirst: "Create first vault",
     unlockVault: "Unlock Vault",
+    cancel: "Cancel",
+    delete: "Delete",
+    clear: "Clear",
+    enterCode: "Enter code",
+    incorrectCode: "Incorrect code. Please try again.",
   },
   es: {
     heroLabel: "BOVEDAS PRIVADAS DE LEGADO",
@@ -39,8 +44,17 @@ const copy = {
     emptyText: "Crea tu primera boveda privada para empezar a preservar historias, fotos, grabaciones y legado familiar.",
     createFirst: "Crear primera boveda",
     unlockVault: "Desbloquear bóveda",
+    cancel: "Cancelar",
+    delete: "Borrar",
+    clear: "Limpiar",
+    enterCode: "Ingresa el codigo",
+    incorrectCode: "Código incorrecto. Inténtalo de nuevo.",
   },
 };
+
+const MAX_PIN_LENGTH = 8;
+const MIN_PIN_LENGTH = 4;
+const KEYPAD_BUTTONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "delete", "0", "clear"];
 
 export default function MobileProfilesPage() {
   const router = useRouter();
@@ -48,6 +62,9 @@ export default function MobileProfilesPage() {
   const [vaults, setVaults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [unlockingVault, setUnlockingVault] = useState(null);
+  const [enteredCode, setEnteredCode] = useState("");
+  const [unlockError, setUnlockError] = useState("");
 
   const t = copy[language] || copy.en;
   const canInviteFromAnyVault = vaults.some((vault) => vault.access?.canManage);
@@ -68,6 +85,41 @@ export default function MobileProfilesPage() {
   useEffect(() => {
     loadVaults();
   }, []);
+
+  useEffect(() => {
+    if (!unlockingVault) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        closeUnlockModal();
+        return;
+      }
+
+      if (/^\d$/.test(event.key)) {
+        appendDigit(event.key);
+        return;
+      }
+
+      if (event.key === "Backspace") {
+        removeLastDigit();
+        return;
+      }
+
+      if (event.key === "Enter" && enteredCode.length >= MIN_PIN_LENGTH) {
+        submitUnlockCode();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [unlockingVault, enteredCode]);
 
   async function loadVaults() {
     setLoading(true);
@@ -107,14 +159,69 @@ export default function MobileProfilesPage() {
     setLoading(false);
   }
 
-  function unlockVault(vaultId) {
+  function openUnlockModal(vault) {
+    setUnlockingVault(vault);
+    setEnteredCode("");
+    setUnlockError("");
+  }
+
+  function closeUnlockModal() {
+    setUnlockingVault(null);
+    setEnteredCode("");
+    setUnlockError("");
+  }
+
+  function appendDigit(digit) {
+    setUnlockError("");
+    setEnteredCode((current) => {
+      if (current.length >= MAX_PIN_LENGTH) return current;
+      return `${current}${digit}`;
+    });
+  }
+
+  function removeLastDigit() {
+    setUnlockError("");
+    setEnteredCode((current) => current.slice(0, -1));
+  }
+
+  function clearCode() {
+    setUnlockError("");
+    setEnteredCode("");
+  }
+
+  function submitUnlockCode() {
+    if (!unlockingVault || enteredCode.length < MIN_PIN_LENGTH) return;
+
+    // MVP convenience gate only: no PIN is stored or verified here.
+    // Supabase Auth and RLS remain the real security boundary for vault data.
+    const codeIsValid = /^\d{4,8}$/.test(enteredCode);
+
+    if (!codeIsValid) {
+      setUnlockError(t.incorrectCode);
+      return;
+    }
+
     try {
-      sessionStorage.setItem(`vozeterna-unlocked-vault-${vaultId}`, "true");
+      sessionStorage.setItem(`vozeterna-unlocked-vault-${unlockingVault.id}`, "true");
     } catch {
       // Supabase RLS remains the real access control; this is only the existing client hint.
     }
 
-    router.push(`/mobile/profiles/${vaultId}`);
+    router.push(`/mobile/profiles/${unlockingVault.id}`);
+  }
+
+  function handleKeypadPress(value) {
+    if (value === "delete") {
+      removeLastDigit();
+      return;
+    }
+
+    if (value === "clear") {
+      clearCode();
+      return;
+    }
+
+    appendDigit(value);
   }
 
   return (
@@ -172,7 +279,7 @@ export default function MobileProfilesPage() {
                 <strong className="mobileVaultEngravedName">{vaultName}</strong>
               </div>
 
-              <button type="button" className="mobileVaultUnlockButton" onClick={() => unlockVault(vault.id)}>
+              <button type="button" className="mobileVaultUnlockButton" onClick={() => openUnlockModal(vault)}>
                 <LockKeyhole size={16} />
                 {t.unlockVault}
               </button>
@@ -180,6 +287,90 @@ export default function MobileProfilesPage() {
           );
         })}
       </section>
+
+      {unlockingVault && (
+        <div className="mobileVaultUnlockModalBackdrop" role="presentation">
+          <button
+            type="button"
+            className="mobileVaultUnlockBackdropButton"
+            aria-label={t.cancel}
+            onClick={closeUnlockModal}
+          />
+
+          <section
+            className="mobileVaultUnlockModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobileVaultUnlockTitle"
+          >
+            <header className="mobileVaultUnlockHeader">
+              <div>
+                <p className="mobileCapsLabel">{t.enterCode}</p>
+                <h2 id="mobileVaultUnlockTitle">
+                  {unlockingVault.subject_name || unlockingVault.title || "Memory Vault"}
+                </h2>
+              </div>
+
+              <button type="button" aria-label={t.cancel} onClick={closeUnlockModal}>
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="mobileVaultUnlockVisual">
+              <img
+                src={getVaultSkinImage(normalizeVaultSkin(unlockingVault.vault_skin))}
+                alt=""
+                className="mobileVaultUnlockBackground"
+              />
+              <span className="mobileVaultUnlockShade" />
+              <img
+                src="/vault-keypads/vault-keypad-glass-overlay.png"
+                alt=""
+                className="mobileVaultKeypadOverlay"
+              />
+              <div className="mobileVaultPinDots" aria-label={t.enterCode}>
+                {Array.from({ length: MAX_PIN_LENGTH }).map((_, index) => (
+                  <span className={index < enteredCode.length ? "filled" : ""} key={index} />
+                ))}
+              </div>
+
+              <div className="mobileVaultDigitPad" aria-label={t.enterCode}>
+                {KEYPAD_BUTTONS.map((value, index) => (
+                  <button
+                    type="button"
+                    className={value === "delete" || value === "clear" ? "mobileVaultDigitButton utility" : "mobileVaultDigitButton"}
+                    key={value}
+                    aria-label={value === "delete" ? t.delete : value === "clear" ? t.clear : value}
+                    autoFocus={index === 0}
+                    onClick={() => handleKeypadPress(value)}
+                  >
+                    <span aria-hidden="true">
+                      {value === "delete" ? "delete" : value === "clear" ? "clear" : value}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {unlockError && <p className="mobileVaultUnlockError">{unlockError}</p>}
+
+            <div className="mobileVaultUnlockActions">
+              <button type="button" onClick={closeUnlockModal}>
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                className="primary"
+                disabled={enteredCode.length < MIN_PIN_LENGTH}
+                onClick={submitUnlockCode}
+              >
+                <LockKeyhole size={16} />
+                {t.unlockVault}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
