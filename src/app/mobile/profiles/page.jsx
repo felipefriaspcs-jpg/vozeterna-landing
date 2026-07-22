@@ -31,6 +31,7 @@ const copy = {
     incorrectCode: "Incorrect code. Please try again.",
     openingVault: "Opening vault...",
     wrongCodeVideo: "Checking code...",
+    playSound: "Tap to play sound",
   },
   es: {
     heroLabel: "BOVEDAS PRIVADAS DE LEGADO",
@@ -56,6 +57,7 @@ const copy = {
 
 copy.es.openingVault = "Abriendo boveda...";
 copy.es.wrongCodeVideo = "Verificando codigo...";
+copy.es.playSound = "Toca para reproducir sonido";
 
 const MAX_PIN_LENGTH = 8;
 const MIN_PIN_LENGTH = 4;
@@ -73,9 +75,19 @@ export default function MobileProfilesPage() {
   const [unlockError, setUnlockError] = useState("");
   const [unlockStage, setUnlockStage] = useState("keypad");
   const unlockVideoHandledRef = useRef(false);
+  const unlockVideoRef = useRef(null);
+  const [showSoundPrompt, setShowSoundPrompt] = useState(false);
 
   const t = copy[language] || copy.en;
   const canInviteFromAnyVault = vaults.some((vault) => vault.access?.canManage);
+  const unlockSkinKey = unlockingVault ? normalizeVaultSkin(unlockingVault.vault_skin) : "steel";
+  const unlockVideoSrc =
+    unlockStage === "successVideo"
+      ? getVaultSkinVideo(unlockSkinKey, "openSuccess")
+      : unlockStage === "wrongVideo"
+        ? getVaultSkinVideo(unlockSkinKey, "wrongCode")
+        : "";
+  const isVideoStage = unlockStage === "successVideo" || unlockStage === "wrongVideo";
 
   useEffect(() => {
     setLanguage(getInitialMobileLanguage());
@@ -135,6 +147,7 @@ export default function MobileProfilesPage() {
     if (!unlockingVault || unlockStage === "keypad") return undefined;
 
     unlockVideoHandledRef.current = false;
+    setShowSoundPrompt(false);
     const fallbackDelay = unlockStage === "successVideo" ? 5200 : 3600;
     const fallbackTimer = window.setTimeout(() => {
       handleUnlockVideoEnded(unlockStage);
@@ -142,6 +155,16 @@ export default function MobileProfilesPage() {
 
     return () => window.clearTimeout(fallbackTimer);
   }, [unlockingVault, unlockStage]);
+
+  useEffect(() => {
+    if (!unlockingVault || unlockStage === "keypad" || !unlockVideoSrc) return undefined;
+
+    const playTimer = window.setTimeout(() => {
+      attemptUnlockVideoPlay(true);
+    }, 0);
+
+    return () => window.clearTimeout(playTimer);
+  }, [unlockingVault, unlockStage, unlockVideoSrc]);
 
   async function loadVaults() {
     setLoading(true);
@@ -187,6 +210,7 @@ export default function MobileProfilesPage() {
     setUnlockError("");
     setUnlockStage("keypad");
     unlockVideoHandledRef.current = false;
+    setShowSoundPrompt(false);
   }
 
   function closeUnlockModal() {
@@ -195,6 +219,7 @@ export default function MobileProfilesPage() {
     setUnlockError("");
     setUnlockStage("keypad");
     unlockVideoHandledRef.current = false;
+    setShowSoundPrompt(false);
   }
 
   function appendDigit(digit) {
@@ -224,12 +249,31 @@ export default function MobileProfilesPage() {
 
     if (!codeIsValid) {
       setUnlockError("");
+      setShowSoundPrompt(false);
       setUnlockStage("wrongVideo");
       return;
     }
 
     setUnlockError("");
+    setShowSoundPrompt(false);
     setUnlockStage("successVideo");
+  }
+
+  async function attemptUnlockVideoPlay(showPromptOnBlock = true) {
+    const video = unlockVideoRef.current;
+    if (!video) return;
+
+    try {
+      video.muted = false;
+      video.volume = 1;
+      await video.play();
+      setShowSoundPrompt(false);
+    } catch (error) {
+      console.warn("Vault unlock video playback with sound was blocked or unavailable.", error);
+      if (showPromptOnBlock) {
+        setShowSoundPrompt(true);
+      }
+    }
   }
 
   function finishSuccessfulUnlock() {
@@ -247,6 +291,7 @@ export default function MobileProfilesPage() {
   function handleUnlockVideoEnded(stage = unlockStage) {
     if (unlockVideoHandledRef.current) return;
     unlockVideoHandledRef.current = true;
+    setShowSoundPrompt(false);
 
     if (stage === "successVideo") {
       finishSuccessfulUnlock();
@@ -257,6 +302,16 @@ export default function MobileProfilesPage() {
       setUnlockStage("keypad");
       setEnteredCode("");
       setUnlockError(t.incorrectCode);
+    }
+  }
+
+  function handleUnlockVideoMetadata() {
+    const video = unlockVideoRef.current;
+    if (!video) return;
+
+    const audioTracks = video.audioTracks;
+    if (audioTracks && audioTracks.length === 0) {
+      console.warn("Vault unlock video loaded without a detectable audio track.");
     }
   }
 
@@ -275,15 +330,6 @@ export default function MobileProfilesPage() {
 
     appendDigit(value);
   }
-
-  const unlockSkinKey = unlockingVault ? normalizeVaultSkin(unlockingVault.vault_skin) : "steel";
-  const unlockVideoSrc =
-    unlockStage === "successVideo"
-      ? getVaultSkinVideo(unlockSkinKey, "openSuccess")
-      : unlockStage === "wrongVideo"
-        ? getVaultSkinVideo(unlockSkinKey, "wrongCode")
-        : "";
-  const isVideoStage = unlockStage === "successVideo" || unlockStage === "wrongVideo";
 
   return (
     <section className="mobileScreenStack mobileVaultsPage">
@@ -415,13 +461,24 @@ export default function MobileProfilesPage() {
               {isVideoStage && (
                 <div className="mobileVaultUnlockVideoStage">
                   <video
+                    ref={unlockVideoRef}
                     src={unlockVideoSrc}
                     className="mobileVaultUnlockVideo"
                     autoPlay
                     playsInline
-                    muted
+                    controls={false}
+                    onLoadedMetadata={handleUnlockVideoMetadata}
                     onEnded={() => handleUnlockVideoEnded(unlockStage)}
                   />
+                  {showSoundPrompt && (
+                    <button
+                      type="button"
+                      className="mobileVaultVideoSoundButton"
+                      onClick={() => attemptUnlockVideoPlay(true)}
+                    >
+                      {t.playSound}
+                    </button>
+                  )}
                   <p className="mobileVaultUnlockVideoText">
                     {unlockStage === "successVideo" ? t.openingVault : t.wrongCodeVideo}
                   </p>
