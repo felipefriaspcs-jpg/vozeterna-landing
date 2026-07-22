@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LockKeyhole, Plus, QrCode, UserRound, X } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getVaultAccess, loadAccessibleVaults } from "../../../lib/mobileVault";
-import { getVaultSkinImage, normalizeVaultSkin } from "../../../lib/vaultSkins";
+import { getVaultSkinImage, getVaultSkinVideo, normalizeVaultSkin } from "../../../lib/vaultSkins";
 import { getInitialMobileLanguage } from "../../../components/mobile/mobileLanguage";
 
 const copy = {
@@ -29,6 +29,8 @@ const copy = {
     clear: "Clear",
     enterCode: "Enter code",
     incorrectCode: "Incorrect code. Please try again.",
+    openingVault: "Opening vault...",
+    wrongCodeVideo: "Checking code...",
   },
   es: {
     heroLabel: "BOVEDAS PRIVADAS DE LEGADO",
@@ -52,8 +54,12 @@ const copy = {
   },
 };
 
+copy.es.openingVault = "Abriendo boveda...";
+copy.es.wrongCodeVideo = "Verificando codigo...";
+
 const MAX_PIN_LENGTH = 8;
 const MIN_PIN_LENGTH = 4;
+const DEMO_UNLOCK_CODE = "1234";
 const KEYPAD_BUTTONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "delete", "0", "clear"];
 
 export default function MobileProfilesPage() {
@@ -65,6 +71,8 @@ export default function MobileProfilesPage() {
   const [unlockingVault, setUnlockingVault] = useState(null);
   const [enteredCode, setEnteredCode] = useState("");
   const [unlockError, setUnlockError] = useState("");
+  const [unlockStage, setUnlockStage] = useState("keypad");
+  const unlockVideoHandledRef = useRef(false);
 
   const t = copy[language] || copy.en;
   const canInviteFromAnyVault = vaults.some((vault) => vault.access?.canManage);
@@ -93,6 +101,8 @@ export default function MobileProfilesPage() {
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event) {
+      if (unlockStage !== "keypad") return;
+
       if (event.key === "Escape") {
         closeUnlockModal();
         return;
@@ -119,7 +129,19 @@ export default function MobileProfilesPage() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [unlockingVault, enteredCode]);
+  }, [unlockingVault, enteredCode, unlockStage]);
+
+  useEffect(() => {
+    if (!unlockingVault || unlockStage === "keypad") return undefined;
+
+    unlockVideoHandledRef.current = false;
+    const fallbackDelay = unlockStage === "successVideo" ? 5200 : 3600;
+    const fallbackTimer = window.setTimeout(() => {
+      handleUnlockVideoEnded(unlockStage);
+    }, fallbackDelay);
+
+    return () => window.clearTimeout(fallbackTimer);
+  }, [unlockingVault, unlockStage]);
 
   async function loadVaults() {
     setLoading(true);
@@ -163,12 +185,16 @@ export default function MobileProfilesPage() {
     setUnlockingVault(vault);
     setEnteredCode("");
     setUnlockError("");
+    setUnlockStage("keypad");
+    unlockVideoHandledRef.current = false;
   }
 
   function closeUnlockModal() {
     setUnlockingVault(null);
     setEnteredCode("");
     setUnlockError("");
+    setUnlockStage("keypad");
+    unlockVideoHandledRef.current = false;
   }
 
   function appendDigit(digit) {
@@ -192,14 +218,22 @@ export default function MobileProfilesPage() {
   function submitUnlockCode() {
     if (!unlockingVault || enteredCode.length < MIN_PIN_LENGTH) return;
 
-    // MVP convenience gate only: no PIN is stored or verified here.
+    // Demo convenience gate only: no PIN is stored or verified here.
     // Supabase Auth and RLS remain the real security boundary for vault data.
-    const codeIsValid = /^\d{4,8}$/.test(enteredCode);
+    const codeIsValid = /^\d{4,8}$/.test(enteredCode) && enteredCode === DEMO_UNLOCK_CODE;
 
     if (!codeIsValid) {
-      setUnlockError(t.incorrectCode);
+      setUnlockError("");
+      setUnlockStage("wrongVideo");
       return;
     }
+
+    setUnlockError("");
+    setUnlockStage("successVideo");
+  }
+
+  function finishSuccessfulUnlock() {
+    if (!unlockingVault?.id) return;
 
     try {
       sessionStorage.setItem(`vozeterna-unlocked-vault-${unlockingVault.id}`, "true");
@@ -210,7 +244,25 @@ export default function MobileProfilesPage() {
     router.push(`/mobile/profiles/${unlockingVault.id}`);
   }
 
+  function handleUnlockVideoEnded(stage = unlockStage) {
+    if (unlockVideoHandledRef.current) return;
+    unlockVideoHandledRef.current = true;
+
+    if (stage === "successVideo") {
+      finishSuccessfulUnlock();
+      return;
+    }
+
+    if (stage === "wrongVideo") {
+      setUnlockStage("keypad");
+      setEnteredCode("");
+      setUnlockError(t.incorrectCode);
+    }
+  }
+
   function handleKeypadPress(value) {
+    if (unlockStage !== "keypad") return;
+
     if (value === "delete") {
       removeLastDigit();
       return;
@@ -223,6 +275,15 @@ export default function MobileProfilesPage() {
 
     appendDigit(value);
   }
+
+  const unlockSkinKey = unlockingVault ? normalizeVaultSkin(unlockingVault.vault_skin) : "steel";
+  const unlockVideoSrc =
+    unlockStage === "successVideo"
+      ? getVaultSkinVideo(unlockSkinKey, "openSuccess")
+      : unlockStage === "wrongVideo"
+        ? getVaultSkinVideo(unlockSkinKey, "wrongCode")
+        : "";
+  const isVideoStage = unlockStage === "successVideo" || unlockStage === "wrongVideo";
 
   return (
     <section className="mobileScreenStack mobileVaultsPage">
@@ -294,7 +355,7 @@ export default function MobileProfilesPage() {
             type="button"
             className="mobileVaultUnlockBackdropButton"
             aria-label={t.cancel}
-            onClick={closeUnlockModal}
+            onClick={unlockStage === "keypad" ? closeUnlockModal : undefined}
           />
 
           <section
@@ -311,60 +372,81 @@ export default function MobileProfilesPage() {
                 </h2>
               </div>
 
-              <button type="button" aria-label={t.cancel} onClick={closeUnlockModal}>
+              <button type="button" aria-label={t.cancel} onClick={closeUnlockModal} disabled={isVideoStage}>
                 <X size={18} />
               </button>
             </header>
 
             <div className="mobileVaultUnlockVisual">
               <img
-                src={getVaultSkinImage(normalizeVaultSkin(unlockingVault.vault_skin))}
+                src={getVaultSkinImage(unlockSkinKey)}
                 alt=""
                 className="mobileVaultUnlockBackground"
               />
               <span className="mobileVaultUnlockShade" />
-              <div className="mobileVaultUnlockGlassKeypad">
-                <div className="mobileVaultKeypadDisplay">
-                  <div className="mobileVaultPinDots" aria-label={t.enterCode}>
-                    {Array.from({ length: MAX_PIN_LENGTH }).map((_, index) => (
-                      <span className={index < enteredCode.length ? "filled" : ""} key={index} />
+
+              {unlockStage === "keypad" && (
+                <div className="mobileVaultUnlockGlassKeypad">
+                  <div className="mobileVaultKeypadDisplay">
+                    <div className="mobileVaultPinDots" aria-label={t.enterCode}>
+                      {Array.from({ length: MAX_PIN_LENGTH }).map((_, index) => (
+                        <span className={index < enteredCode.length ? "filled" : ""} key={index} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mobileVaultDigitPad" aria-label={t.enterCode}>
+                    {KEYPAD_BUTTONS.map((value, index) => (
+                      <button
+                        type="button"
+                        className={value === "delete" || value === "clear" ? "mobileVaultDigitButton mobileVaultDigitButtonControl" : "mobileVaultDigitButton"}
+                        key={value}
+                        aria-label={value === "delete" ? t.delete : value === "clear" ? t.clear : value}
+                        autoFocus={index === 0}
+                        onClick={() => handleKeypadPress(value)}
+                      >
+                        {value === "delete" ? t.delete : value === "clear" ? t.clear : value}
+                      </button>
                     ))}
                   </div>
                 </div>
+              )}
 
-                <div className="mobileVaultDigitPad" aria-label={t.enterCode}>
-                  {KEYPAD_BUTTONS.map((value, index) => (
-                    <button
-                      type="button"
-                      className={value === "delete" || value === "clear" ? "mobileVaultDigitButton mobileVaultDigitButtonControl" : "mobileVaultDigitButton"}
-                      key={value}
-                      aria-label={value === "delete" ? t.delete : value === "clear" ? t.clear : value}
-                      autoFocus={index === 0}
-                      onClick={() => handleKeypadPress(value)}
-                    >
-                      {value === "delete" ? t.delete : value === "clear" ? t.clear : value}
-                    </button>
-                  ))}
+              {isVideoStage && (
+                <div className="mobileVaultUnlockVideoStage">
+                  <video
+                    src={unlockVideoSrc}
+                    className="mobileVaultUnlockVideo"
+                    autoPlay
+                    playsInline
+                    muted
+                    onEnded={() => handleUnlockVideoEnded(unlockStage)}
+                  />
+                  <p className="mobileVaultUnlockVideoText">
+                    {unlockStage === "successVideo" ? t.openingVault : t.wrongCodeVideo}
+                  </p>
                 </div>
+              )}
+            </div>
+
+            {unlockStage === "keypad" && unlockError && <p className="mobileVaultUnlockError">{unlockError}</p>}
+
+            {unlockStage === "keypad" && (
+              <div className="mobileVaultUnlockActions">
+                <button type="button" onClick={closeUnlockModal}>
+                  {t.cancel}
+                </button>
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={enteredCode.length < MIN_PIN_LENGTH}
+                  onClick={submitUnlockCode}
+                >
+                  <LockKeyhole size={16} />
+                  {t.unlockVault}
+                </button>
               </div>
-            </div>
-
-            {unlockError && <p className="mobileVaultUnlockError">{unlockError}</p>}
-
-            <div className="mobileVaultUnlockActions">
-              <button type="button" onClick={closeUnlockModal}>
-                {t.cancel}
-              </button>
-              <button
-                type="button"
-                className="primary"
-                disabled={enteredCode.length < MIN_PIN_LENGTH}
-                onClick={submitUnlockCode}
-              >
-                <LockKeyhole size={16} />
-                {t.unlockVault}
-              </button>
-            </div>
+            )}
           </section>
         </div>
       )}
