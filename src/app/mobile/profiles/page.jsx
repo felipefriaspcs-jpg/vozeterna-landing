@@ -323,32 +323,29 @@ export default function MobileProfilesPage() {
                 className="mobileVaultUnlockBackground"
               />
               <span className="mobileVaultUnlockShade" />
-              <img
-                src="/vault-keypads/vault-keypad-glass-overlay.png"
-                alt=""
-                className="mobileVaultKeypadOverlay"
-              />
-              <div className="mobileVaultPinDots" aria-label={t.enterCode}>
-                {Array.from({ length: MAX_PIN_LENGTH }).map((_, index) => (
-                  <span className={index < enteredCode.length ? "filled" : ""} key={index} />
-                ))}
-              </div>
+              <div className="mobileVaultUnlockGlassKeypad">
+                <div className="mobileVaultKeypadDisplay">
+                  <div className="mobileVaultPinDots" aria-label={t.enterCode}>
+                    {Array.from({ length: MAX_PIN_LENGTH }).map((_, index) => (
+                      <span className={index < enteredCode.length ? "filled" : ""} key={index} />
+                    ))}
+                  </div>
+                </div>
 
-              <div className="mobileVaultDigitPad" aria-label={t.enterCode}>
-                {KEYPAD_BUTTONS.map((value, index) => (
-                  <button
-                    type="button"
-                    className={value === "delete" || value === "clear" ? "mobileVaultDigitButton utility" : "mobileVaultDigitButton"}
-                    key={value}
-                    aria-label={value === "delete" ? t.delete : value === "clear" ? t.clear : value}
-                    autoFocus={index === 0}
-                    onClick={() => handleKeypadPress(value)}
-                  >
-                    <span aria-hidden="true">
-                      {value === "delete" ? "delete" : value === "clear" ? "clear" : value}
-                    </span>
-                  </button>
-                ))}
+                <div className="mobileVaultDigitPad" aria-label={t.enterCode}>
+                  {KEYPAD_BUTTONS.map((value, index) => (
+                    <button
+                      type="button"
+                      className={value === "delete" || value === "clear" ? "mobileVaultDigitButton mobileVaultDigitButtonControl" : "mobileVaultDigitButton"}
+                      key={value}
+                      aria-label={value === "delete" ? t.delete : value === "clear" ? t.clear : value}
+                      autoFocus={index === 0}
+                      onClick={() => handleKeypadPress(value)}
+                    >
+                      {value === "delete" ? t.delete : value === "clear" ? t.clear : value}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
