@@ -930,7 +930,9 @@ export default function MobileProfileDetailPage() {
             {coverUrl ? (
               <img src={coverUrl} alt={vault.subject_name || vault.title} className="mobileProfileCover" />
             ) : (
-              <div className="mobileProfileCoverPlaceholder"><Camera size={30} /></div>
+              <div className="mobileProfileCoverPlaceholder mobileVaultDetailSkinCover">
+                <img src={vaultImageSrc} alt="" />
+              </div>
             )}
 
             {canCurrentUserUpdatePhoto ? (
@@ -949,25 +951,33 @@ export default function MobileProfileDetailPage() {
       {canManageVault && (
         <section className="mobileFormCard mobileVaultSkinSelector">
           <p className="mobileCapsLabel">{t.vaultStyle}</p>
-          <div className="mobileVaultSkinOptions">
-            {VAULT_SKIN_KEYS.map((key) => {
-              const option = getVaultSkin(key);
-              const selected = key === skinKey;
+          <label className="mobileVaultStyleSelectLabel">
+            <span>{t.vaultStyle}</span>
+            <select
+              value={skinKey}
+              onChange={(event) => updateVaultSkin(event.target.value)}
+              disabled={skinSaving}
+            >
+              {VAULT_SKIN_KEYS.map((key) => {
+                const option = getVaultSkin(key);
 
-              return (
-                <button
-                  type="button"
-                  key={key}
-                  className={selected ? "active" : ""}
-                  onClick={() => updateVaultSkin(key)}
-                  disabled={skinSaving}
-                >
-                  <img src={getVaultSkinImage(key)} alt="" />
-                  <span>{option.label[language]}</span>
-                </button>
-              );
-            })}
+                return (
+                  <option value={key} key={key}>
+                    {option.label[language]}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+
+          <div className="mobileVaultStylePreview">
+            <img src={getVaultSkinImage(skinKey)} alt="" />
+            <div>
+              <strong>{skin.label[language]}</strong>
+              <p>{skinSaving ? "Saving style..." : t.vaultStyle}</p>
+            </div>
           </div>
+
           {skinMessage && <p className="mobileFormMessage">{skinMessage}</p>}
         </section>
       )}
