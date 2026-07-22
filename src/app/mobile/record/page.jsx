@@ -165,6 +165,9 @@ export default function MobileRecordPage() {
 
   useEffect(() => {
     async function loadVaults() {
+      const queryParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const queryVaultId = queryParams?.get("vaultId") || "";
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -188,7 +191,13 @@ export default function MobileRecordPage() {
       const uploadableVaults = rowsWithAccess.filter((vault) => vault.access.canUpload);
 
       setVaults(uploadableVaults);
-      setSelectedVaultId((current) => current || uploadableVaults[0]?.id || "");
+      setSelectedVaultId((current) => {
+        if (current) return current;
+        if (queryVaultId && uploadableVaults.some((vault) => vault.id === queryVaultId)) {
+          return queryVaultId;
+        }
+        return uploadableVaults[0]?.id || "";
+      });
     }
 
     loadVaults();

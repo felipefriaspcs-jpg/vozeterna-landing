@@ -3,7 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LockKeyhole, Plus, QrCode, UserRound, Volume2, VolumeX } from "lucide-react";
+import {
+  Image as ImageIcon,
+  LockKeyhole,
+  Plus,
+  QrCode,
+  ShieldCheck,
+  UserRound,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getVaultAccess, loadAccessibleVaults } from "../../../lib/mobileVault";
 import { getVaultSkin, getVaultSkinImage, getVaultSkinVideo, normalizeVaultSkin } from "../../../lib/vaultSkins";
@@ -12,18 +21,25 @@ import { getInitialMobileLanguage } from "../../../components/mobile/mobileLangu
 const copy = {
   en: {
     label: "Vaults",
-    title: "Vaults",
-    subtitle: "Manage the memory vaults and private archives connected to your account.",
+    heroLabel: "PRIVATE LEGACY VAULTS",
+    title: "Memory Vaults",
+    subtitle: "Create private spaces for loved ones, stories, voice recordings, photos, and family memories.",
     create: "Create vault",
-    createText: "Add a new memory vault.",
+    createText: "Start a private archive for one loved one or family story.",
     connect: "Connect family",
     connectText: "Create a private invite link or QR code.",
     loading: "Loading vaults...",
+    error: "We could not load your vaults right now. Please try again.",
     emptyTitle: "No vaults yet",
-    emptyText: "Create your first vault or upload a memory to automatically start your family vault.",
-    uploadFirst: "Upload first memory",
+    emptyText: "Create your first private memory vault to begin preserving stories, photos, recordings, and family legacy.",
+    createFirst: "Create first vault",
     familyVault: "Family vault",
     privateArchive: "Private family archive.",
+    private: "Private",
+    memories: "memories",
+    oneMemory: "memory",
+    role: "Role",
+    owner: "Owner",
     qr: "QR invite",
     skin: "Vault style",
     openVault: "Open Vault",
@@ -38,18 +54,25 @@ const copy = {
   },
   es: {
     label: "Bovedas",
-    title: "Bovedas",
-    subtitle: "Administra bovedas de recuerdos y archivos privados conectados a tu cuenta.",
+    heroLabel: "BOVEDAS PRIVADAS DE LEGADO",
+    title: "Bovedas de memoria",
+    subtitle: "Crea espacios privados para seres queridos, historias, grabaciones de voz, fotos y recuerdos familiares.",
     create: "Crear boveda",
-    createText: "Agrega una nueva boveda de recuerdos.",
+    createText: "Inicia un archivo privado para un ser querido o una historia familiar.",
     connect: "Conectar familia",
-    connectText: "Crea un enlace privado o código QR.",
+    connectText: "Crea un enlace privado o codigo QR.",
     loading: "Cargando bovedas...",
+    error: "No pudimos cargar tus bovedas ahora. Intentalo de nuevo.",
     emptyTitle: "Todavia no hay bovedas",
-    emptyText: "Crea tu primera boveda o sube un recuerdo para empezar tu boveda familiar.",
-    uploadFirst: "Subir primer recuerdo",
+    emptyText: "Crea tu primera boveda privada para empezar a preservar historias, fotos, grabaciones y legado familiar.",
+    createFirst: "Crear primera boveda",
     familyVault: "Boveda familiar",
     privateArchive: "Archivo familiar privado.",
+    private: "Privada",
+    memories: "recuerdos",
+    oneMemory: "recuerdo",
+    role: "Rol",
+    owner: "Dueno",
     qr: "Invitar QR",
     skin: "Estilo de boveda",
     openVault: "Abrir boveda",
@@ -69,7 +92,10 @@ export default function MobileProfilesPage() {
   const videoRefs = useRef({});
   const [language, setLanguage] = useState("en");
   const [vaults, setVaults] = useState([]);
+  const [coverUrls, setCoverUrls] = useState({});
+  const [memoryCounts, setMemoryCounts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const [vaultUnlockStates, setVaultUnlockStates] = useState({});
   const [soundMuted, setSoundMuted] = useState(false);
 
@@ -104,6 +130,7 @@ export default function MobileProfilesPage() {
 
   async function loadVaults() {
     setLoading(true);
+    setErrorMessage("");
 
     const {
       data: { user },
@@ -111,6 +138,8 @@ export default function MobileProfilesPage() {
 
     if (!user?.id) {
       setVaults([]);
+      setCoverUrls({});
+      setMemoryCounts({});
       setLoading(false);
       return;
     }
@@ -119,7 +148,7 @@ export default function MobileProfilesPage() {
       const accessibleVaults = await loadAccessibleVaults(
         supabase,
         user,
-        "id, network_id, created_by, title, subject_name, relationship_label, description, vault_skin, created_at"
+        "id, network_id, created_by, title, subject_name, relationship_label, description, cover_image_path, vault_skin, visibility, created_at"
       );
       const vaultsWithAccess = await Promise.all(
         accessibleVaults.map(async (vault) => ({
@@ -130,9 +159,46 @@ export default function MobileProfilesPage() {
       const uniqueVaults = [...new Map(vaultsWithAccess.map((vault) => [vault.id, vault])).values()];
 
       setVaults(uniqueVaults);
+
+      const nextCoverUrls = {};
+      await Promise.all(
+        uniqueVaults.map(async (vault) => {
+          if (!vault.cover_image_path) return;
+
+          const { data, error } = await supabase.storage
+            .from("family-media")
+            .createSignedUrl(vault.cover_image_path, 3600);
+
+          if (!error && data?.signedUrl) {
+            nextCoverUrls[vault.id] = data.signedUrl;
+          }
+        })
+      );
+      setCoverUrls(nextCoverUrls);
+
+      if (uniqueVaults.length > 0) {
+        const { data: memoryRows, error: memoryError } = await supabase
+          .from("memories")
+          .select("id, vault_id")
+          .in("vault_id", uniqueVaults.map((vault) => vault.id));
+
+        if (!memoryError) {
+          const nextCounts = {};
+          (memoryRows || []).forEach((memory) => {
+            if (!memory.vault_id) return;
+            nextCounts[memory.vault_id] = (nextCounts[memory.vault_id] || 0) + 1;
+          });
+          setMemoryCounts(nextCounts);
+        }
+      } else {
+        setMemoryCounts({});
+      }
     } catch (error) {
       console.error("Mobile profiles error:", error.message);
       setVaults([]);
+      setCoverUrls({});
+      setMemoryCounts({});
+      setErrorMessage(t.error);
     }
 
     setLoading(false);
@@ -161,7 +227,6 @@ export default function MobileProfilesPage() {
   function verifyVaultPasscode(_vault, candidatePasscode) {
     // TODO: Replace this MVP-only demo check with server-side hashed vault passcode verification.
     // Production must not store plaintext passcodes or rely on frontend-only checks for security.
-    // Future WebAuthn/passkeys can replace this temporary passcode gate.
     return candidatePasscode === "1234";
   }
 
@@ -171,7 +236,7 @@ export default function MobileProfilesPage() {
       try {
         localStorage.setItem("vozeterna-vault-sound-muted", String(nextValue));
       } catch {
-        // Ignore storage failures; playback still falls back to in-memory preference.
+        // Playback still falls back to the in-memory preference.
       }
       return nextValue;
     });
@@ -275,49 +340,54 @@ export default function MobileProfilesPage() {
   }
 
   function clearSoftLockout(vaultId) {
-    updateUnlockState(vaultId, (current) => ({
-      ...current,
+    updateUnlockState(vaultId, () => ({
       state: "idle",
       passcode: "",
       failedAttempts: 0,
       message: "",
+      forceMuted: false,
     }));
   }
 
   return (
-    <section className="mobileScreenStack">
-      <div className="mobileScreenHero">
-        <p className="mobileCapsLabel">{t.label}</p>
+    <section className="mobileScreenStack mobileVaultsPage">
+      <div className="mobileVaultHero">
+        <p className="mobileCapsLabel">{t.heroLabel}</p>
         <h1>{t.title}</h1>
         <p>{t.subtitle}</p>
       </div>
 
-      <section className="mobileActionGrid">
-        <Link href="/mobile/profiles/new" className="mobileActionCard primary">
+      <Link href="/mobile/profiles/new" className="mobileVaultCreateCard">
+        <span>
           <Plus size={20} />
+        </span>
+        <div>
           <strong>{t.create}</strong>
           <p>{t.createText}</p>
-        </Link>
+        </div>
+      </Link>
 
-        {canInviteFromAnyVault && (
+      {canInviteFromAnyVault && (
+        <section className="mobileActionGrid mobileVaultSecondaryActions">
           <Link href="/mobile/connect" className="mobileActionCard">
             <QrCode size={20} />
             <strong>{t.connect}</strong>
             <p>{t.connectText}</p>
           </Link>
-        )}
-      </section>
+        </section>
+      )}
 
-      <section className="vaultEntryGrid">
+      <section className="vaultEntryGrid mobileVaultGrid">
         {loading && <p className="mobileEmptyText">{t.loading}</p>}
+        {!loading && errorMessage && <p className="mobileFormMessage">{errorMessage}</p>}
 
-        {!loading && vaults.length === 0 && (
-          <div className="mobileEmptyCard">
+        {!loading && !errorMessage && vaults.length === 0 && (
+          <div className="mobileVaultEmptyState">
             <UserRound size={24} />
             <h2>{t.emptyTitle}</h2>
             <p>{t.emptyText}</p>
-            <Link href="/mobile/upload" className="mobileRecorderPrimary">
-              {t.uploadFirst}
+            <Link href="/mobile/profiles/new" className="mobileRecorderPrimary">
+              {t.createFirst}
             </Link>
           </div>
         )}
@@ -334,12 +404,12 @@ export default function MobileProfilesPage() {
                 : "";
           const videoIsActive = Boolean(videoSrc) && unlock.state !== "idle";
           const inputDisabled = unlock.state === "opening" || unlock.state === "wrongCode" || unlock.state === "lockedOut";
+          const memoryCount = memoryCounts[vault.id] || 0;
+          const roleLabel = vault.access?.role || (vault.created_by ? t.owner : "");
+          const coverUrl = coverUrls[vault.id];
 
           return (
-            <article
-              className={`vaultEntryCard skin-${skinKey} state-${unlock.state}`}
-              key={vault.id}
-            >
+            <article className={`vaultEntryCard mobileVaultCard skin-${skinKey} state-${unlock.state}`} key={vault.id}>
               <div className="vaultEntryMediaFrame">
                 {videoIsActive ? (
                   <video
@@ -358,6 +428,8 @@ export default function MobileProfilesPage() {
                     onEnded={() => handleVaultVideoEnded(vault.id)}
                     onError={() => handleVaultVideoError(vault.id)}
                   />
+                ) : coverUrl ? (
+                  <img src={coverUrl} alt="" className="vaultEntryMedia mobileVaultCoverPhoto" />
                 ) : (
                   <img src={getVaultSkinImage(skinKey)} alt="" className="vaultEntryMedia" />
                 )}
@@ -365,12 +437,23 @@ export default function MobileProfilesPage() {
                 <strong className="vaultEntryTitle">{vault.subject_name || vault.title}</strong>
               </div>
 
-              <span className="mobileVaultSkinBadge">
-                {t.skin}: {skin.label[language]}
-              </span>
+              <div className="mobileVaultBadgeRow">
+                <span className="mobileVaultPill">
+                  <ShieldCheck size={13} />
+                  {vault.visibility || t.private}
+                </span>
+                {roleLabel && <span className="mobileVaultPill">{t.role}: {roleLabel}</span>}
+                <span className="mobileVaultPill">
+                  <ImageIcon size={13} />
+                  {memoryCount} {memoryCount === 1 ? t.oneMemory : t.memories}
+                </span>
+              </div>
 
               <span>{vault.relationship_label || t.familyVault}</span>
               <p>{vault.description || t.privateArchive}</p>
+              <span className="mobileVaultSkinBadge">
+                {t.skin}: {skin.label[language]}
+              </span>
               <p className="vaultEntryInstruction">{t.unlockVault}</p>
 
               <form className="vaultEntryForm" onSubmit={(event) => handleUnlockSubmit(event, vault)}>

@@ -91,7 +91,7 @@ export default function MobileCreateProfilePage() {
         return;
       }
 
-      await createMobileVault({
+      const createdVault = await createMobileVault({
         supabase,
         user,
         subjectName,
@@ -102,7 +102,7 @@ export default function MobileCreateProfilePage() {
       setMessage(t.saved);
 
       window.setTimeout(() => {
-        router.push("/mobile/profiles");
+        router.push(createdVault?.vaultId ? `/mobile/profiles/${createdVault.vaultId}` : "/mobile/profiles");
       }, 650);
     } catch (error) {
       setMessage(error.message || "Could not create vault.");

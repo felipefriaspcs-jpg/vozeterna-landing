@@ -53,7 +53,9 @@ const copy = {
     addToAlbum: "Add to album",
     chooseAlbum: "Choose album",
     addedToAlbum: "Added to album.",
-    empty: "No memories connected yet.",
+    emptyTitle: "No memories connected yet",
+    empty: "Start documenting this legacy by uploading a photo, voice recording, video, or story.",
+    addFirstMemory: "Add first memory",
     noAlbums: "No albums yet.",
     upload: "Add memory",
     uploadToAlbum: "Upload to album",
@@ -129,7 +131,9 @@ const copy = {
     addToAlbum: "Agregar a álbum",
     chooseAlbum: "Elegir álbum",
     addedToAlbum: "Agregado al álbum.",
-    empty: "Todavía no hay recuerdos conectados.",
+    emptyTitle: "Todavia no hay recuerdos conectados",
+    empty: "Empieza a documentar este legado subiendo una foto, grabacion de voz, video o historia.",
+    addFirstMemory: "Agregar primer recuerdo",
     noAlbums: "Todavía no hay álbumes.",
     upload: "Agregar recuerdo",
     uploadToAlbum: "Subir al álbum",
@@ -912,11 +916,16 @@ export default function MobileProfileDetailPage() {
           </div>
         </section>
       ) : (
-        <div className="vaultUnlockedContent">
-          <div className="mobileScreenHero mobileProfileHero">
+        <div className="vaultUnlockedContent mobileVaultDetail">
+          <div className="mobileScreenHero mobileProfileHero mobileVaultDetailHeroCard">
             <p className="mobileCapsLabel">{t.label}</p>
             <h1>{vault.subject_name || vault.title}</h1>
             <p>{vault.description || t.privateArchive}</p>
+
+            <div className="mobileVaultBadgeRow">
+              <span className="mobileVaultPill">{vault.relationship_label || t.familyVault}</span>
+              <span className="mobileVaultPill">{canManageVault ? "Owner/Admin" : "Member"}</span>
+            </div>
 
             {coverUrl ? (
               <img src={coverUrl} alt={vault.subject_name || vault.title} className="mobileProfileCover" />
@@ -964,11 +973,18 @@ export default function MobileProfileDetailPage() {
       )}
 
       {(canUploadToVault || canManageVault) && (
-        <section className="mobileActionGrid">
+        <section className="mobileActionGrid mobileVaultAddMemoryGrid">
           {canUploadToVault && (
             <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileActionCard primary">
               <UploadCloud size={20} />
               <strong>{t.upload}</strong>
+            </Link>
+          )}
+
+          {canUploadToVault && (
+            <Link href={`/mobile/record?vaultId=${vault.id}`} className="mobileActionCard">
+              <Mic2 size={20} />
+              <strong>{language === "es" ? "Grabar" : "Record"}</strong>
             </Link>
           )}
 
@@ -1042,10 +1058,12 @@ export default function MobileProfileDetailPage() {
         <p className="mobileCapsLabel">{t.memories}</p>
 
         {memories.length === 0 ? (
-          <div className="mobileEmptyCard">
+          <div className="mobileVaultEmptyState">
+            <ImageIcon size={24} />
+            <h2>{t.emptyTitle || t.empty}</h2>
             <p>{t.empty}</p>
             {canUploadToVault && (
-              <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileRecorderPrimary">{t.upload}</Link>
+              <Link href={`/mobile/upload?vaultId=${vault.id}`} className="mobileRecorderPrimary">{t.addFirstMemory || t.upload}</Link>
             )}
           </div>
         ) : (
