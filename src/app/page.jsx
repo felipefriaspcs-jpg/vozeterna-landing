@@ -2,7 +2,11 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
+import { Fragment, useState, useEffect } from "react";
+import { motion } from "motion/react";
+import { LuArrowRight, LuCircleCheckBig, LuQuote, LuHeart, LuCheck, LuTimerReset, LuLock, LuHandCoins } from "react-icons/lu";
+import { FaFacebookF, FaInstagram, FaYoutube, FaLinkedinIn } from "react-icons/fa";
 
 const FORMS = {
   en: {
@@ -98,14 +102,14 @@ const copy = {
     betaTitle: "Founder Beta Notice:",
     betaText: "VozEterna is currently accepting early customers. Some services are delivered manually while the full platform is being built.",
 
-    pricingEyebrow: "SIMPLE PRICING. LASTING VALUE.",
+    pricingEyebrow: "Choose the legacy plan that fits your family.",
     viewPrices: "View prices in:",
     popular: "MOST POPULAR",
     month: "/mo",
     plans: [
-      ["Starter", "Perfect for individuals getting started.", ["Guided recordings", "Private vault (5GB)", "Basic sharing"], "Get Started"],
-      ["Family Legacy", "Everything your family needs to preserve and share.", ["Unlimited recordings", "Private vault (50GB)", "QR memorial pages", "Legacy planner"], "Start Your Legacy"],
-      ["Funeral Home Partner", "Powerful tools to serve more families.", ["Digital tribute packages", "Family upload pages", "White-label branding", "Priority support"], "Partner With Us"],
+      ["Starter", "Perfect for one person starting their family legacy.", ["Up to 2 Legacy Vaults", "Guided voice recordings", "Private storage, 5GB included", "Basic family sharing", "QR memorial link"], "Start Preserving"],
+      ["Family Legacy", "For families who want to preserve and share more memories together.", ["Up to 10 Legacy Vaults", "Unlimited guided recordings", "Private storage, 50GB included", "QR memorial pages", "Family comments and sharing", "Legacy planner"], "Start Your Legacy"],
+      ["Funeral Home Partner", "For funeral homes and service providers helping families preserve memories.", ["Up to 25 Family Legacy Vaults", "Digital tribute packages", "Family upload pages", "QR memorial pages", "Partner branding", "Priority support"], "Partner With Us"],
     ],
 
     finalTitle: "Do not wait until all you have left is photos.",
@@ -205,14 +209,14 @@ const copy = {
     betaTitle: "Aviso de Beta Fundador:",
     betaText: "VozEterna actualmente acepta clientes tempranos. Algunos servicios se entregan manualmente mientras se construye la plataforma completa.",
 
-    pricingEyebrow: "PRECIOS SIMPLES. VALOR DURADERO.",
+    pricingEyebrow: "Elige el plan sucesorio que mejor se adapte a tu familia.",
     viewPrices: "Ver precios en:",
     popular: "MAS POPULAR",
     month: "/mes",
     plans: [
-      ["Inicial", "Perfecto para personas que apenas comienzan.", ["Grabaciones guiadas", "Boveda privada (5GB)", "Compartir basico"], "Comenzar"],
-      ["Legado Familiar", "Todo lo que tu familia necesita para preservar y compartir.", ["Grabaciones ilimitadas", "Boveda privada (50GB)", "Paginas memoriales con QR", "Planificador de legado"], "Iniciar Mi Legado"],
-      ["Aliado Funerario", "Herramientas para servir mejor a mas familias.", ["Paquetes de homenaje digital", "Paginas de carga familiar", "Marca blanca", "Soporte prioritario"], "Ser Aliado"],
+      ["Inicial", "Perfecto para una persona que comienza a crear el legado familiar.", ["Hasta 2 bóvedas de legado", "Grabaciones de voz guiadas", "Almacenamiento privado, 5 GB incluidos", "Compartir con la familia", "Enlace QR conmemorativo"], "Comienza a preservar"],
+      ["Legado familiar", "Para familias que desean preservar y compartir más recuerdos juntas.", ["Hasta 10 bóvedas de legado", "Grabaciones guiadas ilimitadas", "Almacenamiento privado, 50 GB incluidos", "Páginas conmemorativas QR", "Comentarios y compartición familiar", "Planificador de legado"], "Comienza tu legado"],
+      ["Socio de funerarias", "Para funerarias y proveedores de servicios que ayudan a las familias a preservar recuerdos.", ["Hasta 25 bóvedas de legado familiar", "Paquetes de homenaje digital", "Páginas de carga familiar", "Páginas conmemorativas QR", "Marca de socio", "Soporte prioritario"], "Asóciate con nosotros"],
     ],
 
     finalTitle: "No esperes hasta que lo unico que quede sean fotos.",
@@ -255,7 +259,7 @@ function Cta({ children, href, variant = "primary" }) {
 
 function Switchers({ language, setLanguage, currency, setCurrency }) {
   return (
-    <div className="siteControls">
+    <div className="items-center gap-2 hidden xl:flex">
       <div className="segmented">
         <button type="button" className={language === "es" ? "active" : ""} onClick={() => setLanguage("es")}>ES</button>
         <button type="button" className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button>
@@ -271,83 +275,125 @@ function Switchers({ language, setLanguage, currency, setCurrency }) {
 export default function Home() {
   const [language, setLanguage] = useState("es");
   const [currency, setCurrency] = useState("MXN");
+  const [scrolled, setScrolled] = useState(false);
   const t = copy[language];
   const familyForm = FORMS[language].family;
   const funeralForm = FORMS[language].funeral;
 
+  const featureImgs = [
+    '/images/recording.png',
+    '/images/private.png',
+    '/images/qr.png',
+    '/images/social.png',
+  ];
+
+  const quoteAvatars = [
+    '/images/avatar-1.jpg',
+    '/images/avatar-2.jpg',
+    '/images/avatar-3.jpg',
+  ]
+
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 0);
+    };
+
+    onScroll(); // Initialize on mount
+    window.addEventListener("scroll", onScroll);
+
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <main>
-      <header>
-        <a className="brand" href="#">
-          <Image src="/brand/logo-primary.png" alt="VozEterna logo" width={170} height={48} priority  style={{ width: "auto", height: "auto" }} />
-        </a>
+      <header className={`${scrolled ? 'shadow-md bg-white/20 backdrop-blur-md ' : ''} w-full fixed top-0 z-50 transition-all`}>
+        <div className="header">
+          <Link className="brand" href="#">
+            <Image src="/brand/logo-emblem.png" alt="VozEterna logo" width={120} height={48} className="w-auto h-auto" priority />
+            <span className="hidden 2xl:block">VozEtherna</span>
+          </Link>
 
-        <nav>
-          <a href="#how">{t.navHow}</a>
-          <a href="#families">{t.navFamilies}</a>
-          <a href="#funeral">{t.navFuneral}</a>
-          <a href="#pricing">{t.navPricing}</a>
-          <a href="#about">{t.navAbout}</a>
-        </nav>
+          <nav>
+            <Link href="#how">{t.navHow}</Link>
+            <Link href="#families">{t.navFamilies}</Link>
+            <Link href="#funeral">{t.navFuneral}</Link>
+            <Link href="#pricing">{t.navPricing}</Link>
+            <Link href="#about">{t.navAbout}</Link>
+          </nav>
 
-        <div className="headerRight">
-          <Switchers language={language} setLanguage={setLanguage} currency={currency} setCurrency={setCurrency} />
-          <Cta href="/mobile?auth=signin" variant="signin">{t.signIn}</Cta>
-          <Cta href={familyForm} variant="gold">{t.start}</Cta>
+          <div className="headerRight">
+            <Switchers language={language} setLanguage={setLanguage} currency={currency} setCurrency={setCurrency} />
+            {/* <Cta href="/mobile?auth=signin" variant="signin">{t.signIn}</Cta> */}
+            <Link className="btn gold w-60" href={familyForm}>{t.start}</Link>
+          </div>
         </div>
       </header>
 
       <section className="hero">
-        <div>
-          <p className="eyebrow">{t.eyebrow}</p>
-          <h1>{t.heroTitle}</h1>
-          <p className="lede">{t.heroText}</p>
-          <div className="heroActions">
-            <Cta href={familyForm}>{t.primaryCta}</Cta>
-            <Cta href={familyForm} variant="secondary">{t.secondaryCta}</Cta>
-            <Cta href={funeralForm} variant="gold">{t.partnerCta}</Cta>
+        <div className="container mx-auto px-5">
+          <div className="flex flex-col items-center text-center xl:items-start xl:text-left xl:max-w-2xl gap-y-4">
+            <motion.p initial={{ transform: "translate(0, 20px)", opacity: 0 }} animate={{ transform: "translate(0, 0)", opacity: 1, transition: { duration: 1 } }} className="eyebrow">{t.eyebrow}</motion.p>
+            <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 1, delay: 1 } }} className="font-annapurna">{t.heroTitle}</motion.h1>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 1, delay: 1 } }} className="flex items-center gap-4 my-4">
+              <div className="w-20 h-0.5 rounded-full bg-primary" />
+              <div className="w-2 h-2 rounded-full bg-primary" />
+              <div className="w-20 h-0.5 rounded-full bg-primary" />
+            </motion.div>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.3 } }} className="lede">{t.heroText}</motion.p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.6 } }} className="heroActions">
+              <Cta href={familyForm}>{t.primaryCta}</Cta>
+              {/* <Cta href={familyForm} variant="secondary">{t.secondaryCta}</Cta> */}
+              <Cta href={funeralForm} variant="gold">{t.partnerCta}</Cta>
+            </motion.div>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 1.9 } }} className="inviteSignIn">
+              {t.inviteSignInPrefix} <a href="/mobile?auth=signin">{t.inviteSignInAction}</a>
+            </motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3, delay: 2.2 } }} className="trust">{t.trust}</motion.p>
           </div>
-          <p className="inviteSignIn">
-            {t.inviteSignInPrefix} <a href="/mobile?auth=signin">{t.inviteSignInAction}</a>
-          </p>
-          <p className="trust">{t.trust}</p>
         </div>
 
-        <div className="heroImage">
-          <Image src="/images/hero-family.png" alt="Family recording memories together" fill priority sizes="(max-width: 900px) 100vw, 50vw" />
-        </div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 1 } }} className="heroImage">
+          <Image src="/images/hero-family.png" alt="Family recording memories together" width={1448} height={1086} priority />
+        </motion.div>
       </section>
 
       <section className="features">
-        {t.features.map(([icon, title, text]) => (
-          <article className="feature" key={title}>
-            <div className="icon"><Icon type={icon} /></div>
+        {t.features.map(([icon, title, text], i) => (
+          <motion.article className="feature" key={title} initial={{ transform: "translate(0, 20px)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: i * 0.1 + 0.3 } }} viewport={{ once: true }}>
+            <div className="h-20 mb-4">
+              <Image src={featureImgs[i]} alt={title} width={500} height={200} className="h-20 w-auto object-contain" alt="" />
+            </div>
             <h3>{title}</h3>
             <p>{text}</p>
-          </article>
+          </motion.article>
         ))}
       </section>
 
       <section className="how" id="how">
         <div className="howCopy">
-          <p className="sectionLabel">{t.howEyebrow}</p>
-          <h2>{t.howTitle}</h2>
-          <p>{t.howText}</p>
+          <h2 className="section-label">{t.howEyebrow}</h2>
+          {/* <h2>{t.howTitle}</h2>
+          <p>{t.howText}</p> */}
 
           <div className="steps">
             {t.steps.map(([title, text], i) => (
-              <div className={i === 0 ? "step active" : "step"} key={title}>
-                <span>{String(i + 1).padStart(2, "0")}</span>
-                <div>
-                  <h4>{title}</h4>
-                  <p>{text}</p>
-                </div>
-              </div>
+              <Fragment key={i}>
+                {i > 0 && <LuArrowRight size={20} className="opacity-20 mt-16" />}
+                <motion.div className={i === 0 ? "step active" : "step"} key={title} initial={{ transform: "translate(0, 20px)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: i * 0.1 + 0.3 } }} viewport={{ once: true }}>
+                  <div className="flex gap-2 h-12 xl:h-6">
+                    <span>{i + 1}</span>
+                    <h4>{title}</h4>
+                  </div>
+                  <div>
+                    <p>{text}</p>
+                  </div>
+                </motion.div>
+              </Fragment>
             ))}
           </div>
         </div>
 
-        <div className="howPreview">
+        {/* <div className="howPreview">
           <div className="previewTop">
             <div>
               <strong>{t.miniTitle}</strong>
@@ -365,103 +411,248 @@ export default function Home() {
             <div><strong>{t.miniMemorial}</strong><span>{t.miniMemorialMeta}</span></div>
           </div>
           <a className="howMiniCta" href={familyForm} target="_blank" rel="noopener noreferrer">{t.miniCta}</a>
-        </div>
+        </div> */}
       </section>
 
       <section className="audiences">
         <article className="audience dark" id="families">
-          <div>
-            <h2>{t.familiesTitle}</h2>
-            {t.familiesBullets.map((item) => <p key={item}>{item}</p>)}
+          <div className="audience-content">
+            <motion.div className="audience-header" initial={{ opacity: 0 }} whileInView={{ opacity: 1, transition: { delay: 0.3 } }} viewport={{ once: true }}>
+              <div className="audience-header-icon">
+                <Image src="/images/family.png" width={40} height={40} alt={t.funeralTitle} />
+              </div>
+              <div className="audience-header-title">
+                <h2>{t.funeralTitle}</h2>
+                <p>{t.funeralBullets[0]}</p>
+              </div>
+            </motion.div>
+            <div className="audience-list">
+              {t.familiesBullets.slice(1).map((item, i) => (
+                <motion.div className="audience-item" key={item} initial={{ transform: "translate(20px, 0)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: i * 0.3 + 0.3 } }} viewport={{ once: true }}>
+                  <LuCircleCheckBig size={28} />
+                  <p>{item}</p>
+                </motion.div>)
+              )}
+            </div>
           </div>
-          <img src="/images/family-memory.png" alt="Family preserving memories" className="family-memory-img" />
+          <Image src="/images/family-memory.png" alt="Family preserving memories" width={1586} height={992} />
         </article>
 
-        <article className="audience light" id="funeral">
-          <div>
-            <h2>{t.funeralTitle}</h2>
-            {t.funeralBullets.map((item) => <p key={item}>{item}</p>)}
+        <article className="audience bg-primary/10" id="funeral">
+          <div className="audience-content">
+            <motion.div className="audience-header" initial={{ opacity: 0 }} whileInView={{ opacity: 1, transition: { delay: 0.3 } }} viewport={{ once: true }}>
+              <div className="audience-header-icon">
+                <Image src="/images/home.svg" width={40} height={40} alt={t.funeralTitle} />
+              </div>
+              <div className="audience-header-title">
+                <h2>{t.funeralTitle}</h2>
+                <p>{t.funeralBullets[0]}</p>
+              </div>
+            </motion.div>
+            <div className="audience-list">
+              {t.funeralBullets.slice(1).map((item, i) => (
+                <motion.div className="audience-item" key={item} initial={{ transform: "translate(20px, 0)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: i * 0.3 + 0.3 } }} viewport={{ once: true }}>
+                  <LuCircleCheckBig size={28} />
+                  <p>{item}</p>
+                </motion.div>)
+              )}
+            </div>
           </div>
           <Image src="/images/funeral-dashboard.png" alt="Funeral home dashboard" width={210} height={130} />
         </article>
       </section>
 
       <section className="quotes">
-        <p className="sectionTitle">{t.loved}</p>
-        <div>
-          {t.testimonials.map(([name, location, quote]) => (
+        <div className="flex justify-center">
+          <h2 className="section-label">{t.loved}</h2>
+        </div>
+        <div className="flex flex-col lg:flex-row justify-center gap-8 mt-4">
+          {t.testimonials.map(([name, location, quote], i) => (
             <article className="quote" key={name}>
-              <blockquote>{quote}</blockquote>
-              <strong>{name}</strong>
-              <span>{location}</span>
+              <div className="flex gap-4 items-start h-24">
+                <LuQuote className="fill-primary stroke-primary rotate-180" size={24} />
+                <motion.blockquote className="pt-2 flex-1" initial={{ transform: "translate(0, 20px)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: i * 0.3 + 0.3 } }} viewport={{ once: true }}>{quote}</motion.blockquote>
+              </div>
+              <div className="flex items-center gap-4">
+                <div>
+                  <img src={quoteAvatars[i]} className="w-16 h-16 rounded-full" />
+                </div>
+                <div className="">
+                  <strong>- {name}</strong>
+                  <span>{location}</span>
+                </div>
+              </div>
             </article>
           ))}
         </div>
+
+        <div className="flex justify-center gap-4 mt-4">
+          <div className="w-3 h-3 rounded-full cursor-pointer hover:bg-primary transition-colors bg-primary" />
+          <div className="w-3 h-3 rounded-full cursor-pointer hover:bg-primary transition-colors bg-muted" />
+          <div className="w-3 h-3 rounded-full cursor-pointer hover:bg-primary transition-colors bg-muted" />
+        </div>
       </section>
 
-      
-      <section className="bilingual" id="about">
-        <div className="bilingualCopy">
-          <h2>{t.bilingualTitle}</h2>
-          <p>{t.bilingualText}</p>
+      <section className="" id="about">
+        <div className="lg:flex bg-primary/10 rounded-3xl">
+          <div className="flex-1 flex items-center gap-10 p-4">
+            <Image src="/images/en-es.svg" alt="" width={160} height={160} />
+            <div className="flex-1 space-y-2">
+              <h2 className="text-3xl font-semibold max-w-100">{t.bilingualTitle}</h2>
+              <p>{t.bilingualText}</p>
+            </div>
+          </div>
+
+          <div className="flex-1 flex p-4 lg:p-0">
+            <img src="/images/bilingual-family.png" alt="Bilingual family using VozEterna" className="h-40 lg:h-full w-40 lg:w-[50%] object-cover rounded-full lg:rounded-none lg:mask-[linear-gradient(to_left,transparent,black_25%)]" />
+            <div className="flex-1 px-8 flex flex-col justify-center gap-6">
+              <p className="text-xl font-semibold">{t.bilingualSide}</p>
+              <div className="flex items-center gap-4 opacity-70">
+                <div className="h-0.5 w-20 bg-primary" />
+                <LuHeart size={24} className="fill-primary stroke-primary" />
+                <div className="h-0.5 w-20 bg-primary" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="border border-primary bg-primary/30 rounded-xl px-8 py-4 animate-pulse">
+          <strong>{t.betaTitle}</strong> {t.betaText}
+        </div>
+      </section>
+
+      <section id="pricing">
+        <div className="flex justify-center">
+          <h2 className="section-label">{t.pricingEyebrow}</h2>
         </div>
 
-        <div className="bilingualPhoto">
-          <img src="/images/bilingual-family.png" alt="Bilingual family using VozEterna" />
-        </div>
-
-        <h3>{t.bilingualSide}</h3>
-      </section>
-
-
-      <section className="betaNotice">
-        <strong>{t.betaTitle}</strong> {t.betaText}
-      </section>
-
-      <section className="section" id="pricing">
-        <p className="sectionTitle">{t.pricingEyebrow}</p>
-
-        <div className="pricingControls">
+        {/* <div className="pricingControls">
           <span>{t.viewPrices}</span>
           <Switchers language={language} setLanguage={setLanguage} currency={currency} setCurrency={setCurrency} />
-        </div>
+        </div> */}
 
-        <div className="pricing">
-          {t.plans.map(([name, description, items, cta], i) => (
-            <article className={"priceCard " + (i === 1 ? "popular" : "")} key={name}>
-              {i === 1 && <div className="badge">{t.popular}</div>}
-              <h3>{name}</h3>
-              <p>{description}</p>
-              <div className="price"><strong>{prices[currency][i]}</strong><span>{t.month}</span></div>
-              <ul>
-                {items.map((item) => <li key={item}><span className="checkIcon" aria-hidden="true" />{item}</li>)}
-              </ul>
-              <Cta href={i === 2 ? funeralForm : familyForm} variant={i === 1 ? "primary" : "secondary"}>{cta}</Cta>
-            </article>
-          ))}
+        <div className="mt-4 flex flex-col 2xl:flex-row items-center gap-10 justify-center">
+          <div className="flex flex-col lg:flex-row items-center gap-8">
+            {t.plans.map(([name, description, items, cta], i) => (
+              <motion.article className="shadow-primary shadow-md w-84 rounded-2xl overflow-hidden" key={name} initial={{ transform: "scale(0.8)", opacity: 0 }} whileInView={{ transform: "scale(1)", opacity: 1 }} viewport={{ once: true }}>
+                {i === 1 && <div className="bg-navy text-white text-center text-sm py-1.5 font-semibold bg-pattern">{t.popular}</div>}
+                <div className="flex flex-col items-center bg-white px-4 pt-8 pb-4">
+                  <h3 className="text-2xl font-semibold">{name}</h3>
+                  <p className="text-center text-xs leading-tight mt-2">{description}</p>
+                  <div className="flex flex-wrap justify-center items-center gap-x-8 py-4">
+                    <div>
+                      <strong className="text-5xl mr-4">{prices[currency][i]}</strong>
+                      <span className="font-semibold">{t.month}</span>
+                    </div>
+                    <p className="text-sm text-muted">Billed annually</p>
+                  </div>
+                  <ul className="h-40 mb-6 space-y-2">
+                    {items.map((item) => <li className="flex items-center gap-3" key={item}>
+                      <LuCheck size={12} />
+                      <span className="text-sm font-semibold">{item}</span></li>
+                    )}
+                  </ul>
+                  <Link href={i === 2 ? funeralForm : familyForm} className={`btn btn-pricing ${i === 1 ? "primary" : "secondary"}`}>{cta}</Link>
+                </div>
+              </motion.article>
+            ))}
+          </div>
+          <div className="flex flex-col md:flex-row 2xl:flex-col items-start gap-8">
+            <motion.div className="flex items-center gap-4" initial={{ transform: "translate(0, 20px)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: 0.3 } }} viewport={{ once: true }}>
+              <div className="w-10 h-10 rounded-full border-2 border-primary flex justify-center items-center">
+                <LuTimerReset size={20} />
+              </div>
+              <p className="font-semibold">Cancel anytime</p>
+            </motion.div>
+            <motion.div className="flex items-center gap-4" initial={{ transform: "translate(0, 20px)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: 0.6 } }} viewport={{ once: true }}>
+              <div className="w-10 h-10 rounded-full border-2 border-primary flex justify-center items-center">
+                <LuLock size={20} />
+              </div>
+              <p className="font-semibold">Secure & private</p>
+            </motion.div>
+            <motion.div className="flex items-center gap-4" initial={{ transform: "translate(0, 20px)", opacity: 0 }} whileInView={{ transform: "translate(0, 0)", opacity: 1, transition: { delay: 0.9 } }} viewport={{ once: true }}>
+              <div className="w-10 h-10 rounded-full border-2 border-primary flex justify-center items-center">
+                <LuHandCoins size={20} />
+              </div>
+              <p className="font-semibold">30-day money back guarantee</p>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      <section className="finalCta">
-        <div>
-          <span className="infinityIcon" aria-hidden="true" />
-          <h2>{t.finalTitle}</h2>
-          <p>{t.finalText}</p>
+      <section>
+        <div className="flex flex-col lg:flex-row rounded-3xl bg-navy px-20 relative">
+          <div className="flex items-center gap-8 flex-1 py-10">
+            <div className="w-16">
+              <img src="/brand/logo-emblem.png" className="w-16" alt="" />
+            </div>
+            <div className="text-white space-y-2 flex-1 max-w-140">
+              <h2 className="text-3xl">{t.finalTitle}</h2>
+              <p>{t.finalText}</p>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center relative py-10">
+            <div className="relative flex justify-center lg:justify-end items-center flex-1 z-10">
+              <Cta href={familyForm} variant="gold">{t.finalCta}</Cta>
+            </div>
+            <div className="absolute h-full w-[80%] top-0 left-0">
+              <img src="/images/old-photo.png" alt="Old family photo being preserved" className="absolute right-0 xl:relative h-full w-[80%] object-cover mask-[radial-gradient(circle,black,transparent_95%,transparent)]" />
+            </div>
+          </div>
         </div>
-        <Image src="/images/old-photo.png" alt="Old family photo being preserved" width={280} height={170} />
-        <Cta href={familyForm} variant="gold">{t.finalCta}</Cta>
       </section>
 
-      <footer>
-        <a className="brand small" href="#">
-          <Image src="/brand/logo-primary.png" alt="VozEterna logo" width={150} height={42}  style={{ width: "auto", height: "auto" }} />
-        </a>
-        <div className="footerCols">
-          <div><strong>{t.footerCompany}</strong><a href="/about">{t.about}</a><a href="/careers">{t.careers}</a><a href="/press">{t.press}</a></div>
-          <div><strong>{t.footerSupport}</strong><a href="/help-center">{t.help}</a><a href="/privacy-policy">{t.privacy}</a><a href="/terms">{t.terms}</a></div>
-          <div><strong>{t.footerResources}</strong><a href="/blog">{t.blog}</a><a href="/guides">{t.guides}</a><a href="/contact">{t.contact}</a></div>
-          <div><strong>{t.footerContact}</strong><a href="mailto:hello@vozeterna.com">hello@vozeterna.com</a><a>{t.location}</a></div>
+      <footer className="pb-4">
+        <div className="flex flex-col xl:flex-row items-center justify-between px-20 gap-10">
+          <Link href="/">
+            <Image src="/brand/logo-primary.png" alt="VozEterna logo" width={640} height={390} className="w-60" />
+          </Link>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="flex flex-col gap-2">
+              <strong>{t.footerCompany}</strong>
+              <Link href="/about">{t.about}</Link>
+              <Link href="/careers">{t.careers}</Link>
+              <Link href="/press">{t.press}</Link>
+            </div>
+            <div className="flex flex-col gap-2">
+              <strong>{t.footerSupport}</strong>
+              <Link href="/help-center">{t.help}</Link>
+              <Link href="/privacy-policy">{t.privacy}</Link>
+              <Link href="/terms">{t.terms}</Link>
+            </div>
+            <div className="flex flex-col gap-2">
+              <strong>{t.footerResources}</strong>
+              <Link href="/blog">{t.blog}</Link>
+              <Link href="/guides">{t.guides}</Link>
+              <Link href="/contact">{t.contact}</Link>
+            </div>
+            <div className="flex flex-col gap-2">
+              <strong>{t.footerContact}</strong>
+              <Link href="mailto:hello@vozeterna.com">hello@vozeterna.com</Link>
+              <Link href="#">{t.location}</Link>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="uppercase text-center font-bold">Follow us</div>
+            <div className="flex items-center justify-center gap-4">
+              <Link href="#" className="bg-navy rounded-full w-8 h-8 flex items-center justify-center hover:shadow-md shadow-soft hover:-translate-y-0.5 transition-all">
+                <FaFacebookF color="white" />
+              </Link>
+              <Link href="#" className="bg-navy rounded-full w-8 h-8 flex items-center justify-center hover:shadow-md shadow-soft hover:-translate-y-0.5 transition-all">
+                <FaInstagram color="white" />
+              </Link>
+              <Link href="#" className="bg-navy rounded-full w-8 h-8 flex items-center justify-center hover:shadow-md shadow-soft hover:-translate-y-0.5 transition-all">
+                <FaYoutube color="white" />
+              </Link>
+              <Link href="#" className="bg-navy rounded-full w-8 h-8 flex items-center justify-center hover:shadow-md shadow-soft hover:-translate-y-0.5 transition-all">
+                <FaLinkedinIn color="white" />
+              </Link>
+            </div>
+          </div>
         </div>
+        <p className="text-center mt-10">©2026 VozEterna. All rights reserved.</p>
       </footer>
     </main>
   );
