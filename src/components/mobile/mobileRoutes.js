@@ -8,6 +8,7 @@ export const mobileRoutes = {
   collections: "/mobile/collections",
   record: "/mobile/record",
   upload: "/mobile/upload",
+  notifications: "/mobile/notifications",
   consent: "/mobile/consent",
   account: "/mobile/account",
   connect: "/mobile/connect",
